@@ -44,6 +44,10 @@ const showConfigOption = Options.boolean("config").pipe(
   Options.withDescription("Show the current tsl config and exit"),
 );
 
+const loadShowOption = Options.boolean("load-show").pipe(
+  Options.withDescription("Show the configuration that the CLI loads before executing"),
+);
+
 const promptInput = Prompt.text({
   message: "Enter the Korean instruction to translate",
   validate: (value) => {
@@ -89,11 +93,17 @@ const translationCommand = Command.make(
     configPath: configPathOption,
     init: initOption,
     showConfig: showConfigOption,
+    loadShow: loadShowOption,
   },
-  ({ prompt, persona, lang, length, configPath, init, showConfig }) =>
+  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow }) =>
     Effect.gen(function* () {
       const configPathOverride = Option.getOrUndefined(configPath);
       const resolvedConfigPath = configPathOverride ?? resolveDefaultConfigPath();
+
+      if (loadShow) {
+        yield* runLoadShowFlow(resolvedConfigPath);
+        return;
+      }
 
       if (showConfig) {
         yield* showConfigFile(resolvedConfigPath);
@@ -208,6 +218,26 @@ const showConfigFile = (path: string) =>
     console.log(`--- ${path} ---`);
     console.log(JSON.stringify(Bun.YAML.parse(content), null, 2));
   });
+
+const runLoadShowFlow = (path: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const exists = yield* fs.exists(path);
+    if (!exists) {
+      console.log(`⛔️ No saved configuration found at ${path}. Use --init to create one.`);
+      return;
+    }
+    const config = yield* loadConfig(path);
+    console.log(`--- ${path} (loaded) ---`);
+    console.log(JSON.stringify(config, null, 2));
+  }).pipe(
+    Effect.catchAll((error) =>
+      Effect.sync(() => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`⛔️ Unable to load config from ${path}: ${message}`);
+      }),
+    ),
+  );
 
 const runInitFlow = (path: string) =>
   Effect.gen(function* () {
