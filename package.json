@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "translate": "env -u $OPENAI_API_KEY bun run src/poc1.ts",
-    "effect-ai": "env -u $OPENAI_API_KEY bun run src/poc2.ts"
+    "effect-ai": "env -u $OPENAI_API_KEY bun run src/poc2.ts",
+    "persona": "env -u $OPENAI_API_KEY bun run src/poc3.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -14,6 +15,7 @@
   "dependencies": {
     "@effect/ai": "^0.32.1",
     "@effect/ai-openai": "^0.35.0",
+    "@effect/cli": "^0.72.1",
     "@effect/platform-bun": "^0.83.0",
     "effect": "^3.19.3"
   }
