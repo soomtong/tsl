@@ -45,7 +45,7 @@ const showConfigOption = Options.boolean("config").pipe(
 );
 
 const loadShowOption = Options.boolean("load-show").pipe(
-  Options.withDescription("Show the configuration that the CLI loads before executing"),
+  Options.withDescription("Show the resolved config that main loads from the XDG path"),
 );
 
 const promptInput = Prompt.text({
@@ -98,15 +98,16 @@ const translationCommand = Command.make(
   ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow }) =>
     Effect.gen(function* () {
       const configPathOverride = Option.getOrUndefined(configPath);
-      const resolvedConfigPath = configPathOverride ?? resolveDefaultConfigPath();
-
-      if (loadShow) {
-        yield* runLoadShowFlow(resolvedConfigPath);
-        return;
-      }
+      const defaultConfigPath = resolveDefaultConfigPath();
+      const resolvedConfigPath = configPathOverride ?? defaultConfigPath;
 
       if (showConfig) {
         yield* showConfigFile(resolvedConfigPath);
+        return;
+      }
+
+      if (loadShow) {
+        yield* showLoadedConfig(defaultConfigPath);
         return;
       }
 
@@ -219,26 +220,6 @@ const showConfigFile = (path: string) =>
     console.log(JSON.stringify(Bun.YAML.parse(content), null, 2));
   });
 
-const runLoadShowFlow = (path: string) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const exists = yield* fs.exists(path);
-    if (!exists) {
-      console.log(`⛔️ No saved configuration found at ${path}. Use --init to create one.`);
-      return;
-    }
-    const config = yield* loadConfig(path);
-    console.log(`--- ${path} (loaded) ---`);
-    console.log(JSON.stringify(config, null, 2));
-  }).pipe(
-    Effect.catchAll((error) =>
-      Effect.sync(() => {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`⛔️ Unable to load config from ${path}: ${message}`);
-      }),
-    ),
-  );
-
 const runInitFlow = (path: string) =>
   Effect.gen(function* () {
     const provider = yield* providerPrompt;
@@ -283,4 +264,24 @@ const buildConfigFromPrompts = ({
 
 const cloneProfiles = (profiles: typeof defaultProfiles) =>
   Object.fromEntries(Object.entries(profiles).map(([key, value]) => [key, { ...value }])) as typeof defaultProfiles;
+
+const showLoadedConfig = (path: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const exists = yield* fs.exists(path);
+    if (!exists) {
+      console.log(`⛔️ No saved config found at ${path}. Run --init first.`);
+      return;
+    }
+    const config = yield* loadConfig(path);
+    console.log(`--- resolved config (${path}) ---`);
+    console.log(JSON.stringify(config, null, 2));
+  }).pipe(
+    Effect.catchAll((error) =>
+      Effect.sync(() => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`⛔️ Failed to load config: ${message}`);
+      }),
+    ),
+  );
 
