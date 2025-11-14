@@ -31,7 +31,7 @@ bun run tsl --init
 ```
 
 ## 설정(YAML)
-`bun run tsl --init` 명령은 프로젝트 루트에 `~/.config/tsl.config.yaml`을 생성합니다. 수동 작성 예시는 아래와 같습니다.
+`npm start -- --init` 또는 `bun run tsl --init` 명령은 프로젝트 루트에 `~/.config/tsl.config.yaml`을 생성합니다. 수동 작성 예시는 아래와 같습니다.
 
 ```yaml
 # tsl.config.yaml
