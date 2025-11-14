@@ -1,33 +1,32 @@
 import { IdGenerator, LanguageModel, Prompt } from "@effect/ai";
 import * as OpenAiClient from "@effect/ai-openai/OpenAiClient";
 import * as OpenAiLanguageModel from "@effect/ai-openai/OpenAiLanguageModel";
-import { BunRuntime } from "@effect/platform-bun";
 import * as FetchHttpClient from "@effect/platform/FetchHttpClient";
+import { BunRuntime } from "@effect/platform-bun";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import { pipe } from "effect/Function";
 import * as Layer from "effect/Layer";
 
 const MODEL = "gpt-4o-mini";
-const SOURCE_PROMPT =
-  "자바 25 버전에 맞는 최소화된 hello world 프로그램 파일 생성";
+const SOURCE_PROMPT = "자바 25 버전에 맞는 최소화된 hello world 프로그램 파일 생성";
 
 const translationPrompt = Prompt.make([
   {
     role: "system",
     content:
-      "You are a professional bilingual software assistant. Translate Korean engineering prompts into concise native English. Only respond with the translated instruction."
+      "You are a professional bilingual software assistant. Translate Korean engineering prompts into concise native English. Only respond with the translated instruction.",
   },
   {
     role: "user",
-    content: SOURCE_PROMPT
-  }
+    content: SOURCE_PROMPT,
+  },
 ]);
 
 const translateInstruction = Effect.gen(function* () {
   const response = yield* LanguageModel.generateText({
     prompt: translationPrompt,
-    toolChoice: "none"
+    toolChoice: "none",
   });
 
   const trimmed = response.text.trim();
@@ -39,38 +38,34 @@ const translateInstruction = Effect.gen(function* () {
   return trimmed;
 });
 
-const formatError = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+const formatError = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 const program = pipe(
   translateInstruction,
   Effect.tap((text) =>
     Effect.sync(() => {
       console.log(`Effect AI translation: ${text}`);
-    })
-  )
+    }),
+  ),
 );
 
 const httpLayer = FetchHttpClient.layer;
 
 const openAiClientLayer = Layer.provide(
   OpenAiClient.layerConfig({
-    apiKey: Config.redacted("OPENAI_API_KEY")
+    apiKey: Config.redacted("OPENAI_API_KEY"),
   }),
-  httpLayer
+  httpLayer,
 );
 
 const openAiModelLayer = Layer.provide(
   OpenAiLanguageModel.layer({
-    model: MODEL
+    model: MODEL,
   }),
-  openAiClientLayer
+  openAiClientLayer,
 );
 
-const idLayer = Layer.succeed(
-  IdGenerator.IdGenerator,
-  IdGenerator.defaultIdGenerator
-);
+const idLayer = Layer.succeed(IdGenerator.IdGenerator, IdGenerator.defaultIdGenerator);
 
 const effectAiLayer = Layer.merge(idLayer, openAiModelLayer);
 
@@ -80,8 +75,7 @@ BunRuntime.runMain(
     Effect.catchAll((error) =>
       Effect.sync(() => {
         console.error(`⛔️ effect-ai failed: ${formatError(error)}`);
-      })
-    )
-  )
+      }),
+    ),
+  ),
 );
-

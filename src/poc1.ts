@@ -1,8 +1,7 @@
 import { BunRuntime } from "@effect/platform-bun";
 import { Effect, pipe } from "effect";
 
-const SOURCE_PROMPT =
-  "자바 25 버전에 맞는 최소화된 hello world 프로그램 파일 생성";
+const SOURCE_PROMPT = "자바 25 버전에 맞는 최소화된 hello world 프로그램 파일 생성";
 const MODEL = "gpt-4o-mini";
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
 
@@ -28,7 +27,7 @@ type ResponsesPayload = {
 const requireEnvVar = (name: string) =>
   pipe(
     Effect.fromNullable(process.env[name]),
-    Effect.orElseFail(() => new Error(`Missing required env var: ${name}`))
+    Effect.orElseFail(() => new Error(`Missing required env var: ${name}`)),
   );
 
 const translatePrompt = Effect.gen(function* () {
@@ -40,7 +39,7 @@ const translatePrompt = Effect.gen(function* () {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: MODEL,
@@ -54,33 +53,28 @@ const translatePrompt = Effect.gen(function* () {
                     "Translate the following Korean requirement into native English.",
                     "Respond with only the translated sentence.",
                     "",
-                    `Korean: ${SOURCE_PROMPT}`
-                  ].join("\n")
-                }
-              ]
-            }
-          ]
-        })
+                    `Korean: ${SOURCE_PROMPT}`,
+                  ].join("\n"),
+                },
+              ],
+            },
+          ],
+        }),
       });
 
       const payload = (await response.json()) as ResponsesPayload;
 
       if (!response.ok) {
-        const message =
-          payload.error?.message ?? JSON.stringify(payload, null, 2);
-        throw new Error(
-          `OpenAI request failed (${response.status}): ${message}`
-        );
+        const message = payload.error?.message ?? JSON.stringify(payload, null, 2);
+        throw new Error(`OpenAI request failed (${response.status}): ${message}`);
       }
 
       return payload;
     },
-    catch: (error) =>
-      error instanceof Error ? error : new Error(String(error))
+    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
   });
 
-  const translated =
-    extractFromOutput(responseJson) ?? extractFromChoices(responseJson);
+  const translated = extractFromOutput(responseJson) ?? extractFromChoices(responseJson);
 
   if (!translated) {
     throw new Error("OpenAI response did not include translated text");
@@ -90,17 +84,11 @@ const translatePrompt = Effect.gen(function* () {
 });
 
 const extractFromOutput = (payload: ResponsesPayload): string | undefined => {
-  return payload.output
-    ?.flatMap((item) => item.content ?? [])
-    .find((part) => typeof part.text === "string")
-    ?.text;
+  return payload.output?.flatMap((item) => item.content ?? []).find((part) => typeof part.text === "string")?.text;
 };
 
 const extractFromChoices = (payload: ResponsesPayload): string | undefined => {
-  return payload.choices
-    ?.flatMap((choice) => choice.message?.content ?? [])
-    .find((part) => typeof part.text === "string")
-    ?.text;
+  return payload.choices?.flatMap((choice) => choice.message?.content ?? []).find((part) => typeof part.text === "string")?.text;
 };
 
 const program = pipe(
@@ -108,19 +96,17 @@ const program = pipe(
   Effect.tap((translation) =>
     Effect.sync(() => {
       console.log(`Translated instruction: ${translation}`);
-    })
-  )
+    }),
+  ),
 );
 
 BunRuntime.runMain(
   program.pipe(
     Effect.catchAll((error) =>
       Effect.sync(() => {
-        const message =
-          error instanceof Error ? error.message : "Unknown error occurred";
+        const message = error instanceof Error ? error.message : "Unknown error occurred";
         console.error(`⛔️ translate failed: ${message}`);
-      })
-    )
-  )
+      }),
+    ),
+  ),
 );
-

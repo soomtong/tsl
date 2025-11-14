@@ -8,9 +8,12 @@
     "effect-ai": "env -u $OPENAI_API_KEY bun run src/poc2.ts",
     "persona": "env -u $OPENAI_API_KEY bun run src/poc3.ts",
     "prompt": "env -u $OPENAI_API_KEY bun run src/poc4.ts",
-    "config": "bun run src/poc5.ts --init"
+    "config": "bun run src/poc5.ts --init",
+    "biome:check": "biome check src",
+    "biome:format": "biome format src --write"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.5",
     "@types/bun": "latest",
     "typescript": "^5.9.3"
   },
