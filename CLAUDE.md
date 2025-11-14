@@ -6,6 +6,8 @@ alwaysApply: false
 
 Default to using Bun instead of Node.js.
 
+Provide OPENAI_API_KEY in env `env -u $OPENAI_API_KEY` then run bun execution.
+
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
 - Use `bun test` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
