@@ -171,12 +171,12 @@ const translationCommand = Command.make(
         sampleCount,
       }).pipe(Effect.provide(runtimeLayer));
 
-      console.log(`[persona] ${personaProfile.key} — ${personaProfile.title}`);
-      console.log(`[target] ${request.targetLanguage}`);
+      console.log(`🧑‍💼 [persona] ${personaProfile.key} — ${personaProfile.title}`);
+      console.log(`🎯 [target] ${request.targetLanguage}`);
 
       result.outputs.forEach((output, index) => {
         const label = result.outputs.length === 1 ? "[translation]" : `[translation ${index + 1}]`;
-        console.log(label);
+        console.log(`📝 ${label}`);
         console.log(output);
         console.log("");
       });
@@ -296,8 +296,8 @@ const printPromptDetails = ({
   readonly targetLanguage: string;
   readonly systemMessage: string;
 }) => {
-  console.log(`[persona] ${persona.key} — ${persona.title}`);
-  console.log(`[target language] ${targetLanguage}`);
+  console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
+  console.log(`🎯 [target language] ${targetLanguage}`);
   console.log(`[temperature] ${profile.temperature}`);
   console.log(`[maxTokens] ${profile.maxTokens ?? "provider default"}`);
   console.log(`[styleHint] ${profile.styleHint ?? "none"}`);
