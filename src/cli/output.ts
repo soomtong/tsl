@@ -38,13 +38,13 @@ export const printPromptDetails = ({
 }) => {
   console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
   console.log(`🎯 [target language] ${targetLanguage}`);
-  console.log(`[temperature] ${profile.temperature}`);
-  console.log(`[maxTokens] ${profile.maxTokens ?? "provider default"}`);
-  console.log(`[styleHint] ${profile.styleHint ?? "none"}`);
+  console.log(`🌡️[temperature] ${profile.temperature}`);
+  console.log(`📏 [maxTokens] ${profile.maxTokens ?? "provider default"}`);
+  console.log(`🎨 [styleHint] ${profile.styleHint ?? "none"}`);
   console.log(
-    `[translation settings] source=${config.translation.source} autoCopy=${config.translation.autoCopyToClipboard ? "on" : "off"}`,
+    `⚙️[translation settings] source=${config.translation.source} autoCopy=${config.translation.autoCopyToClipboard ? "on" : "off"}`,
   );
-  console.log("[formatter]");
+  console.log("🪄 [formatter]");
   console.log(config.translation.formatter);
   console.log("--- system prompt ---");
   console.log(systemMessage);
