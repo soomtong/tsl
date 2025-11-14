@@ -1,6 +1,6 @@
-# tsl
+# tsl: Translator in console
 
-한국어 프롬프트를 자동으로 영어로 번역해 콘솔 정확도를 높이고, 번역 결과를 클립보드에 복사한 뒤 여러 LLM 제공자(OpenAI, OpenRouter, Gemini 등)에 전달하는 Bun 기반 CLI입니다. `effect-ts`로 부작용을 제어하고, YAML 설정 파일을 통해 모델·키·프롬프트 전략을 관리합니다.
+한국어 프롬프트를 자동으로 영어로 번역해 콘솔 정확도를 높이고, 번역 결과를 클립보드에 복사한 뒤 여러 LLM 제공자(OpenAI, Gemini, OpenRouter 등)에 전달하는 Bun 기반 CLI입니다. `effect-ts`로 부작용을 제어하고, YAML 설정 파일을 통해 모델·키·프롬프트 전략을 관리합니다.
 
 ## 주요 특징
 - Bun + TypeScript + effect-ts 기반의 경량 CLI
@@ -10,12 +10,14 @@
 - `--length` 옵션으로 다중 예제(샘플) 생성
 
 ## 시스템 요구 사항
-- Bun >= 1.1
-- TypeScript >= 5.4
-- effect-ts, @effect/platform, openAI/OpenRouter/Gemini SDK
+- Bun >= 1.3
+- TypeScript >= 5.8
+- effect-ts, @effect/platform, @effect/ai for OpenAI/Gemini/OpenRouter SDK
 - macOS 14+ (클립보드 제어 및 번역 툴링 확인용)
 
 ## 설치
+[@effect/cli](https://github.com/Effect-TS/effect/tree/main/packages/cli) 패키지를 사용하여 단독 실행 파일을 제공함(node/bun 필요)
+
 ```bash
 # 1) 저장소 클론
 git clone https://github.com/your-org/tsl.git
@@ -29,7 +31,7 @@ bun run tsl --init
 ```
 
 ## 설정(YAML)
-`bun run tsl --init` 명령은 프로젝트 루트에 `tsl.config.yaml`을 생성합니다. 수동 작성 예시는 아래와 같습니다.
+`bun run tsl --init` 명령은 프로젝트 루트에 `~/.config/tsl.config.yaml`을 생성합니다. 수동 작성 예시는 아래와 같습니다.
 
 ```yaml
 # tsl.config.yaml
@@ -37,12 +39,12 @@ providers:
   - name: openai
     apiKey: sk-...
     model: gpt-4.1-mini
-  - name: openrouter
-    apiKey: or-...
-    model: meta-llama/llama-3-70b-instruct
   - name: gemini
     apiKey: g-...
     model: gemini-1.5-pro
+  - name: openrouter
+    apiKey: or-...
+    model: meta-llama/llama-3-70b-instruct
 
 translation:
   source: ko
@@ -86,9 +88,9 @@ profiles:
 
 ## Roadmap
 - Provider 연결 상태 자동 점검(`tsl --doctor`)
-- TSL 서버 모드(WebSocket)로 번역 결과 스트리밍
 - Prompt 템플릿 버전 관리 및 공유
 - Git 훅과 연동하여 커밋 메시지 번역 자동화
+- TSL 서버 모드(WebSocket)로 번역 결과 스트리밍
 
 ## 보안 & 운영
 - API 키는 `.env` 또는 macOS Keychain에 저장하고 `tsl.config.yaml`에서는 `${ENV:VAR}` 형태로 참조합니다.
