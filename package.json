@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "start": "bun run src/main.ts",
     "translate": "env -u $OPENAI_API_KEY bun run src/poc1.ts",
     "effect-ai": "env -u $OPENAI_API_KEY bun run src/poc2.ts",
     "persona": "env -u $OPENAI_API_KEY bun run src/poc3.ts",
