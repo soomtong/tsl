@@ -69,11 +69,11 @@ profiles:
 | 명령 | 설명 |
 | ---- | ---- |
 | `tsl --init` | 모델/키 선택 및 YAML 설정 파일 생성 |
-| `tsl :ko "hello"` | 단일 메시지 번역 및 출력/클립보드 복사 |
-| `tsl programming:en "어쩌구 저쩌구"` | `programming` 프로필을 강제하고 영어로 결과를 출력 |
+| `tsl --lang ko "hello"` | 단일 메시지 번역 및 출력/클립보드 복사 |
+| `tsl --persona programming --lang en "어쩌구 저쩌구"` | `programming` 프로필을 강제하고 영어로 결과를 출력 |
 | `tsl --config` | 현재 설정 파일 내용 확인 |
 | `tsl --prompt` | 인터랙티브 프롬프트 모드로 진입 |
-| `tsl programming:en "어쩌구 저쩌구" --length 5` | 동일 프롬프트 기반 예제 5개 생성 |
+| `tsl "어쩌구 저쩌구" --length 5` | 동일 프롬프트 기반 예제 5개 생성 |
 
 ### 사용 흐름
 1. 사용자는 콘솔에서 한국어 프롬프트를 입력합니다.

@@ -7,7 +7,8 @@
     "translate": "env -u $OPENAI_API_KEY bun run src/poc1.ts",
     "effect-ai": "env -u $OPENAI_API_KEY bun run src/poc2.ts",
     "persona": "env -u $OPENAI_API_KEY bun run src/poc3.ts",
-    "prompt": "env -u $OPENAI_API_KEY bun run src/poc4.ts"
+    "prompt": "env -u $OPENAI_API_KEY bun run src/poc4.ts",
+    "config": "bun run src/poc5.ts --init"
   },
   "devDependencies": {
     "@types/bun": "latest",
