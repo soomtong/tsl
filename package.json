@@ -1,0 +1,17 @@
+{
+  "name": "tsl",
+  "module": "src/main.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "translate": "env -u $OPENAI_API_KEY bun run src/poc1.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "^0.83.0",
+    "effect": "^3.19.3"
+  }
+}

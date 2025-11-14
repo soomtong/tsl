@@ -16,7 +16,7 @@
 - macOS 14+ (클립보드 제어 및 번역 툴링 확인용)
 
 ## 설치
-[@effect/cli](https://github.com/Effect-TS/effect/tree/main/packages/cli) 패키지를 사용하여 단독 실행 파일을 제공함(node/bun 필요)
+[@effect/cli](https://github.com/Effect-TS/effect/tree/main/packages/cli) 패키지를 사용하고, `bun build --compile` 을 통해 단독 실행 파일을 제공함(node/bun 불필요)
 
 ```bash
 # 1) 저장소 클론
