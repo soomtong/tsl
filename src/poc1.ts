@@ -31,55 +31,53 @@ const requireEnvVar = (name: string) =>
     Effect.orElseFail(() => new Error(`Missing required env var: ${name}`))
   );
 
-const translatePrompt = Effect.gen(function* (_) {
-  const apiKey = yield* _(requireEnvVar("OPENAI_API_KEY"));
+const translatePrompt = Effect.gen(function* () {
+  const apiKey = yield* requireEnvVar("OPENAI_API_KEY");
 
-  const responseJson = yield* _(
-    Effect.tryPromise({
-      try: async (): Promise<ResponsesPayload> => {
-        const response = await fetch(OPENAI_ENDPOINT, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: MODEL,
-            input: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "input_text",
-                    text: [
-                      "Translate the following Korean requirement into native English.",
-                      "Respond with only the translated sentence.",
-                      "",
-                      `Korean: ${SOURCE_PROMPT}`
-                    ].join("\n")
-                  }
-                ]
-              }
-            ]
-          })
-        });
+  const responseJson = yield* Effect.tryPromise({
+    try: async (): Promise<ResponsesPayload> => {
+      const response = await fetch(OPENAI_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          input: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: [
+                    "Translate the following Korean requirement into native English.",
+                    "Respond with only the translated sentence.",
+                    "",
+                    `Korean: ${SOURCE_PROMPT}`
+                  ].join("\n")
+                }
+              ]
+            }
+          ]
+        })
+      });
 
-        const payload = (await response.json()) as ResponsesPayload;
+      const payload = (await response.json()) as ResponsesPayload;
 
-        if (!response.ok) {
-          const message =
-            payload.error?.message ?? JSON.stringify(payload, null, 2);
-          throw new Error(
-            `OpenAI request failed (${response.status}): ${message}`
-          );
-        }
+      if (!response.ok) {
+        const message =
+          payload.error?.message ?? JSON.stringify(payload, null, 2);
+        throw new Error(
+          `OpenAI request failed (${response.status}): ${message}`
+        );
+      }
 
-        return payload;
-      },
-      catch: (error) =>
-        error instanceof Error ? error : new Error(String(error))
-    })
-  );
+      return payload;
+    },
+    catch: (error) =>
+      error instanceof Error ? error : new Error(String(error))
+  });
 
   const translated =
     extractFromOutput(responseJson) ?? extractFromChoices(responseJson);

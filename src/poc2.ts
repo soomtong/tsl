@@ -24,18 +24,16 @@ const translationPrompt = Prompt.make([
   }
 ]);
 
-const translateInstruction = Effect.gen(function* (_) {
-  const response = yield* _(
-    LanguageModel.generateText({
-      prompt: translationPrompt,
-      toolChoice: "none"
-    })
-  );
+const translateInstruction = Effect.gen(function* () {
+  const response = yield* LanguageModel.generateText({
+    prompt: translationPrompt,
+    toolChoice: "none"
+  });
 
   const trimmed = response.text.trim();
 
   if (trimmed.length === 0) {
-    return yield* _(Effect.fail(new Error("Language model returned empty text")));
+    yield* Effect.fail(new Error("Language model returned empty text"));
   }
 
   return trimmed;
