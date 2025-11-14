@@ -4,10 +4,12 @@ import * as FileSystem from "@effect/platform/FileSystem";
 import { Effect, Layer, Option } from "effect";
 import * as Redacted from "effect/Redacted";
 import { AppConfigService, DEFAULT_TRANSLATION_FORMATTER, defaultProfiles } from "./domain/config";
-import type { ProviderName } from "./domain/config";
+import type { AppConfig, ProfileConfig, ProviderName } from "./domain/config";
 import { personaKeys, requirePersona } from "./domain/persona";
-import type { PersonaKey } from "./domain/persona";
+import type { PersonaKey, PersonaPreset } from "./domain/persona";
+import { buildSystemMessage } from "./domain/prompt";
 import { makeTranslationRequest } from "./domain/translationRequest";
+import type { TranslationRequest } from "./domain/translationRequest";
 import { executeTranslation } from "./application/translation";
 import {
   loadConfig,
@@ -46,6 +48,10 @@ const showConfigOption = Options.boolean("config").pipe(
 
 const loadShowOption = Options.boolean("load-show").pipe(
   Options.withDescription("Show the resolved config that main loads from the XDG path"),
+);
+
+const promptInfoOption = Options.boolean("prompt").pipe(
+  Options.withDescription("Print the current system prompt and persona settings"),
 );
 
 const promptInput = Prompt.text({
@@ -94,8 +100,9 @@ const translationCommand = Command.make(
     init: initOption,
     showConfig: showConfigOption,
     loadShow: loadShowOption,
+    promptInfo: promptInfoOption,
   },
-  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow }) =>
+  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow, promptInfo }) =>
     Effect.gen(function* () {
       const configPathOverride = Option.getOrUndefined(configPath);
       const defaultConfigPath = resolveDefaultConfigPath();
@@ -116,11 +123,6 @@ const translationCommand = Command.make(
         return;
       }
 
-      const finalPrompt = yield* Option.match(prompt, {
-        onSome: Effect.succeed,
-        onNone: () => promptInput,
-      });
-
       const configData = yield* loadConfig(configPathOverride);
 
       const personaKey = yield* Option.match(persona, {
@@ -129,8 +131,35 @@ const translationCommand = Command.make(
       });
 
       const personaProfile = yield* requirePersona(personaKey);
+      const profile = configData.profiles[personaProfile.key];
+      if (!profile) {
+        yield* Effect.fail(new Error(`No profile defined for persona ${personaProfile.key}`));
+      }
+      const personaProfileConfig = profile;
 
       const targetLanguage = (Option.getOrUndefined(lang) ?? configData.translation.target).trim();
+
+      if (promptInfo) {
+        const systemRequest: TranslationRequest = {
+          sourceText: "",
+          persona: personaProfile,
+          targetLanguage,
+        };
+        const systemMessage = buildSystemMessage(systemRequest, configData, personaProfileConfig);
+        printPromptDetails({
+          persona: personaProfile,
+          profile: personaProfileConfig,
+          config: configData,
+          targetLanguage,
+          systemMessage,
+        });
+        return;
+      }
+
+      const finalPrompt = yield* Option.match(prompt, {
+        onSome: Effect.succeed,
+        onNone: () => promptInput,
+      });
 
       const request = yield* makeTranslationRequest({
         sourceText: finalPrompt,
@@ -264,6 +293,33 @@ const buildConfigFromPrompts = ({
 
 const cloneProfiles = (profiles: typeof defaultProfiles) =>
   Object.fromEntries(Object.entries(profiles).map(([key, value]) => [key, { ...value }])) as typeof defaultProfiles;
+
+const printPromptDetails = ({
+  persona,
+  profile,
+  config,
+  targetLanguage,
+  systemMessage,
+}: {
+  readonly persona: PersonaPreset;
+  readonly profile: ProfileConfig;
+  readonly config: AppConfig;
+  readonly targetLanguage: string;
+  readonly systemMessage: string;
+}) => {
+  console.log(`[persona] ${persona.key} — ${persona.title}`);
+  console.log(`[target language] ${targetLanguage}`);
+  console.log(`[temperature] ${profile.temperature}`);
+  console.log(`[maxTokens] ${profile.maxTokens ?? "provider default"}`);
+  console.log(`[styleHint] ${profile.styleHint ?? "none"}`);
+  console.log(
+    `[translation settings] source=${config.translation.source} autoCopy=${config.translation.autoCopyToClipboard ? "on" : "off"}`,
+  );
+  console.log("[formatter]");
+  console.log(config.translation.formatter);
+  console.log("--- system prompt ---");
+  console.log(systemMessage);
+};
 
 const showLoadedConfig = (path: string) =>
   Effect.gen(function* () {

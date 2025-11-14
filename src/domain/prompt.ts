@@ -2,7 +2,7 @@ import { Prompt } from "@effect/ai";
 import type { AppConfig, ProfileConfig } from "./config";
 import type { TranslationRequest } from "./translationRequest";
 
-const buildSystemMessage = (request: TranslationRequest, config: AppConfig, profile: ProfileConfig) => {
+export const buildSystemMessage = (request: TranslationRequest, config: AppConfig, profile: ProfileConfig) => {
   const sections = [
     `You are a bilingual assistant that translates ${config.translation.source.toUpperCase()} engineering requirements into concise ${request.targetLanguage.toUpperCase()} instructions.`,
     config.translation.formatter,
