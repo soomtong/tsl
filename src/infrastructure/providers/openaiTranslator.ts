@@ -1,10 +1,10 @@
-import { IdGenerator } from "@effect/ai/IdGenerator";
+import * as IdGenerator from "@effect/ai/IdGenerator";
 import * as FetchHttpClient from "@effect/platform/FetchHttpClient";
 import * as OpenAiClient from "@effect/ai-openai/OpenAiClient";
 import * as OpenAiLanguageModel from "@effect/ai-openai/OpenAiLanguageModel";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
-import { ProviderConfig } from "../../domain/config";
+import type { ProviderConfig } from "../../domain/config";
 
 export const buildOpenAiTranslatorLayer = (provider: ProviderConfig) => {
   if (provider.name !== "openai") {

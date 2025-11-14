@@ -1,4 +1,4 @@
-import { LanguageModel } from "@effect/ai/LanguageModel";
+import { generateText } from "@effect/ai/LanguageModel";
 import { Effect, pipe } from "effect";
 import type { AppConfig } from "../domain/config";
 import { AppConfigService } from "../domain/config";
@@ -26,7 +26,7 @@ const runSingleTranslation = (request: TranslationRequest, config: AppConfig) =>
   const prompt = buildTranslationPrompt(request, config, profile);
 
   return pipe(
-    LanguageModel.Service.generateText({
+    generateText({
       prompt,
       toolChoice: "none",
     }),

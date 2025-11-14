@@ -1,7 +1,9 @@
 import * as FileSystem from "@effect/platform/FileSystem";
 import { Effect, Option, pipe } from "effect";
-import { AppConfig, ProviderConfig, ProviderName, buildDefaultConfig, defaultProfiles } from "../../domain/config";
-import { PersonaKey, fallbackPersonaKey } from "../../domain/persona";
+import { DEFAULT_TRANSLATION_FORMATTER, defaultProfiles } from "../../domain/config";
+import type { AppConfig, ProviderConfig, ProviderName } from "../../domain/config";
+import { fallbackPersonaKey } from "../../domain/persona";
+import type { PersonaKey } from "../../domain/persona";
 
 const ENV_PATTERN = /^\$\{ENV:([A-Z0-9_]+)\}$/i;
 
@@ -16,7 +18,8 @@ const substituteEnv = (value: string) => {
   if (!match) {
     return Effect.succeed(value);
   }
-  return requireEnvVar(match[1]);
+  const envVar = match[1]!;
+  return requireEnvVar(envVar);
 };
 
 const resolveProviderSecrets = (providers: ReadonlyArray<ProviderConfig>) =>
@@ -45,23 +48,6 @@ const mergeProfiles = (
     return [key, maybeOverride ? { ...value, ...maybeOverride } : value];
   });
   return Object.fromEntries(entries) as typeof base;
-};
-
-const mergeConfig = (partial: Partial<AppConfig> | undefined, fallback: AppConfig): AppConfig => {
-  if (!partial) {
-    return fallback;
-  }
-
-  const providers = partial.providers && partial.providers.length > 0 ? partial.providers : fallback.providers;
-  const translation = partial.translation ? { ...fallback.translation, ...partial.translation } : fallback.translation;
-  const preferredPersona = partial.preferredPersona ?? fallback.preferredPersona ?? fallbackPersonaKey;
-
-  return {
-    providers,
-    translation,
-    profiles: mergeProfiles(fallback.profiles, partial.profiles),
-    preferredPersona,
-  };
 };
 
 const parseConfig = (raw: string): Partial<AppConfig> | undefined => {
@@ -96,30 +82,32 @@ export const resolveDefaultConfigPath = () => `${determineBaseDir()}/tsl/config.
 
 export const loadConfig = (pathOverride?: string) =>
   Effect.gen(function* () {
-    const openAiKey = yield* requireEnvVar("OPENAI_API_KEY");
-    const fallback = buildDefaultConfig(openAiKey);
     const targetPath = pathOverride ?? resolveDefaultConfigPath();
 
     const content = yield* readConfigFile(targetPath);
 
-    const merged = mergeConfig(
-      pipe(
-        content,
-        Option.map(parseConfig),
-        Option.getOrUndefined,
-      ),
-      fallback,
+    const partial = pipe(
+      content,
+      Option.map(parseConfig),
+      Option.getOrUndefined,
     );
 
-    const resolvedProviders = yield* resolveProviderSecrets(merged.providers);
+    const providers = yield* ensureProviders(partial?.providers);
+    const translation = partial?.translation ? { ...defaultTranslationSection, ...partial.translation } : defaultTranslationSection;
+    const profiles = mergeProfiles(defaultProfiles, partial?.profiles);
+    const preferredPersona = partial?.preferredPersona ?? fallbackPersonaKey;
+
+    const resolvedProviders = yield* resolveProviderSecrets(providers);
 
     if (resolvedProviders.length === 0) {
       throw new Error("No providers available after resolving config");
     }
 
     return {
-      ...merged,
       providers: resolvedProviders,
+      translation,
+      profiles,
+      preferredPersona,
     };
   });
 
@@ -136,5 +124,27 @@ export const selectProviderOrFail = (config: AppConfig, preferred?: ProviderName
     throw new Error("No providers defined");
   }
   return first;
+};
+
+const ensureProviders = (providers: ReadonlyArray<ProviderConfig> | undefined) =>
+  Effect.gen(function* () {
+    if (providers && providers.length > 0) {
+      return providers;
+    }
+    const openAiKey = yield* requireEnvVar("OPENAI_API_KEY");
+    return [
+      {
+        name: "openai",
+        apiKey: openAiKey,
+        model: "gpt-4o-mini",
+      },
+    ] satisfies ReadonlyArray<ProviderConfig>;
+  });
+
+const defaultTranslationSection: AppConfig["translation"] = {
+  source: "ko",
+  target: "en",
+  autoCopyToClipboard: true,
+  formatter: DEFAULT_TRANSLATION_FORMATTER,
 };
 
