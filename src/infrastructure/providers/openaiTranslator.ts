@@ -31,4 +31,3 @@ export const buildOpenAiTranslatorLayer = (provider: ProviderConfig) => {
 
   return Layer.merge(modelLayer, idLayer);
 };
-

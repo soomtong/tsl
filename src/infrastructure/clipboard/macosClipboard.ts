@@ -24,4 +24,3 @@ const copyToClipboard = (text: string) =>
 export const MacosClipboardLayer = Layer.succeed(Clipboard, {
   copy: copyToClipboard,
 });
-

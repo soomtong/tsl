@@ -87,4 +87,3 @@ export const buildDefaultConfig = (apiKey: string): AppConfig => ({
   profiles: defaultProfiles,
   preferredPersona: "programming",
 });
-

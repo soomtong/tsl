@@ -6,4 +6,3 @@ export interface ClipboardPort {
 }
 
 export class Clipboard extends Context.Tag("tsl/ClipboardPort")<Clipboard, ClipboardPort>() {}
-

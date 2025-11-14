@@ -37,4 +37,3 @@ export const buildTranslationPrompt = (request: TranslationRequest, config: AppC
       content: buildUserMessage(request, config),
     },
   ]);
-

@@ -31,7 +31,10 @@ const runSingleTranslation = (request: TranslationRequest, config: AppConfig) =>
       toolChoice: "none",
     }),
     Effect.map((response) => response.text.trim()),
-    Effect.filterOrFail((text) => text.length > 0, () => new Error("Language model returned empty text")),
+    Effect.filterOrFail(
+      (text) => text.length > 0,
+      () => new Error("Language model returned empty text"),
+    ),
   );
 };
 
@@ -42,11 +45,10 @@ export const executeTranslation = ({ request, sampleCount }: TranslationInput) =
 
     const iterations = Array.from({ length: Math.max(sampleCount, 1) }, (_, index) => index);
 
-    const translations = yield* Effect.forEach(
-      iterations,
-      () => runSingleTranslation(request, config),
-      { batching: "inherit", concurrency: "unbounded" },
-    );
+    const translations = yield* Effect.forEach(iterations, () => runSingleTranslation(request, config), {
+      batching: "inherit",
+      concurrency: "unbounded",
+    });
 
     const aggregate = translations.join("\n\n");
 
@@ -62,4 +64,3 @@ export const executeTranslation = ({ request, sampleCount }: TranslationInput) =
       targetLanguage: request.targetLanguage,
     } satisfies TranslationResult;
   });
-

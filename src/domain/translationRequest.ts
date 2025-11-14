@@ -31,4 +31,3 @@ export const makeTranslationRequest = ({ sourceText, persona, targetLanguage }: 
     },
     catch: (error) => (error instanceof Error ? error : new Error(String(error))),
   });
-

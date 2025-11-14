@@ -86,11 +86,7 @@ export const loadConfig = (pathOverride?: string) =>
 
     const content = yield* readConfigFile(targetPath);
 
-    const partial = pipe(
-      content,
-      Option.map(parseConfig),
-      Option.getOrUndefined,
-    );
+    const partial = pipe(content, Option.map(parseConfig), Option.getOrUndefined);
 
     const providers = yield* ensureProviders(partial?.providers);
     const translation = partial?.translation ? { ...defaultTranslationSection, ...partial.translation } : defaultTranslationSection;
@@ -147,4 +143,3 @@ const defaultTranslationSection: AppConfig["translation"] = {
   autoCopyToClipboard: true,
   formatter: DEFAULT_TRANSLATION_FORMATTER,
 };
-

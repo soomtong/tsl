@@ -11,11 +11,7 @@ import { buildSystemMessage } from "./domain/prompt";
 import { makeTranslationRequest } from "./domain/translationRequest";
 import type { TranslationRequest } from "./domain/translationRequest";
 import { executeTranslation } from "./application/translation";
-import {
-  loadConfig,
-  resolveDefaultConfigPath,
-  selectProviderOrFail,
-} from "./infrastructure/config/configLoader";
+import { loadConfig, resolveDefaultConfigPath, selectProviderOrFail } from "./infrastructure/config/configLoader";
 import { buildOpenAiTranslatorLayer } from "./infrastructure/providers/openaiTranslator";
 import { MacosClipboardLayer } from "./infrastructure/clipboard/macosClipboard";
 
@@ -38,21 +34,15 @@ const configPathOption = Options.text("config-path")
   .pipe(Options.optional)
   .pipe(Options.withDescription("Override tsl config path (default: ~/.config/tsl/config.yaml)"));
 
-const initOption = Options.boolean("init").pipe(
-  Options.withDescription("Initialize or overwrite the tsl config and exit"),
-);
+const initOption = Options.boolean("init").pipe(Options.withDescription("Initialize or overwrite the tsl config and exit"));
 
-const showConfigOption = Options.boolean("config").pipe(
-  Options.withDescription("Show the current tsl config and exit"),
-);
+const showConfigOption = Options.boolean("config").pipe(Options.withDescription("Show the current tsl config and exit"));
 
 const loadShowOption = Options.boolean("load-show").pipe(
   Options.withDescription("Show the resolved config that main loads from the XDG path"),
 );
 
-const promptInfoOption = Options.boolean("prompt").pipe(
-  Options.withDescription("Print the current system prompt and persona settings"),
-);
+const promptInfoOption = Options.boolean("prompt").pipe(Options.withDescription("Print the current system prompt and persona settings"));
 
 const promptInput = Prompt.text({
   message: "Enter the Korean instruction to translate",
@@ -62,8 +52,7 @@ const promptInput = Prompt.text({
   },
 });
 
-const ensureLength = (value: number) =>
-  value <= 0 ? Effect.fail(new Error("--length must be greater than 0")) : Effect.succeed(value);
+const ensureLength = (value: number) => (value <= 0 ? Effect.fail(new Error("--length must be greater than 0")) : Effect.succeed(value));
 
 const providerPrompt = Prompt.select<ProviderName>({
   message: "Select provider",
@@ -340,4 +329,3 @@ const showLoadedConfig = (path: string) =>
       }),
     ),
   );
-
