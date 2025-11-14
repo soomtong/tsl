@@ -1,6 +1,6 @@
 # tsl: Translator in console
 
-한국어 프롬프트를 자동으로 영어로 번역해 콘솔 정확도를 높이고, 번역 결과를 클립보드에 복사한 뒤 여러 LLM 제공자(OpenAI, Gemini, OpenRouter 등)에 전달하는 Bun 기반 CLI입니다. `effect-ts`로 부작용을 제어하고, YAML 설정 파일을 통해 모델·키·프롬프트 전략을 관리합니다.
+한국어 프롬프트를 자동으로 영어로 번역해, 번역 결과를 클립보드에 복사하는 Bun 기반 CLI입니다. `effect-ts`로 부작용을 제어하고, YAML 설정 파일을 통해 모델·키·프롬프트 전략을 관리합니다.
 
 ## 주요 특징
 - Bun + TypeScript + effect-ts 기반의 경량 CLI
@@ -104,6 +104,3 @@ profiles:
 1. 이슈 또는 제안 등록
 2. 기능 브랜치에서 작업 후 PR 제출
 3. Bun test, lint, typecheck 통과 여부를 CI에서 확인
-
-본 README는 프로젝트 초기 기획용 문서이며, 구현이 진행되면서 세부 내용이 업데이트될 예정입니다.
-
