@@ -1,4 +1,5 @@
 import { generateText } from "@effect/ai/LanguageModel";
+import { withConfigOverride } from "@effect/ai-openai/OpenAiLanguageModel";
 import { Effect, pipe } from "effect";
 import type { AppConfig } from "../domain/config";
 import { AppConfigService } from "../domain/config";
@@ -29,6 +30,10 @@ const runSingleTranslation = (request: TranslationRequest, config: AppConfig) =>
     generateText({
       prompt,
       toolChoice: "none",
+    }),
+    withConfigOverride({
+      temperature: profile.temperature,
+      max_output_tokens: profile.maxTokens ?? undefined,
     }),
     Effect.map((response) => response.text.trim()),
     Effect.filterOrFail(

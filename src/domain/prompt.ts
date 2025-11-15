@@ -3,9 +3,14 @@ import type { AppConfig, ProfileConfig } from "./config";
 import type { TranslationRequest } from "./translationRequest";
 
 export const buildSystemMessage = (request: TranslationRequest, config: AppConfig, profile: ProfileConfig) => {
+  // Replace any hardcoded language references in formatter with the actual target language
+  const formatterWithLanguage = config.translation.formatter
+    .replace(/\bEnglish\b/gi, request.targetLanguage)
+    .replace(/\ben\b/gi, request.targetLanguage);
+
   const sections = [
     `You are a bilingual assistant that translates ${config.translation.source.toUpperCase()} engineering requirements into concise ${request.targetLanguage.toUpperCase()} instructions.`,
-    config.translation.formatter,
+    formatterWithLanguage,
     `Persona directive: ${request.persona.system}`,
   ];
 

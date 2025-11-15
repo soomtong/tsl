@@ -84,6 +84,129 @@ profiles:
 3. 번역된 결과는 클립보드에 자동 저장됩니다.
 4. 선택된 Provider로 API 요청을 보내 응답을 출력/저장합니다.
 
+## 테스트 예제
+
+### 시스템 프롬프트 확인
+
+`--prompt` 옵션으로 현재 설정된 시스템 프롬프트와 매개변수를 확인할 수 있습니다:
+
+```bash
+$ ./dist/tsl --prompt --lang "Japanese"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target language] Japanese
+🌡️[temperature] 0.2
+📏 [maxTokens] provider default
+🎨 [styleHint] Emphasize reproducible steps and include code if needed.
+⚙️[translation settings] source=ko autoCopy=on
+🪄 [formatter]
+Please convert the Korean prompt into concise English that coding agents understand. Keep imperative mood.
+--- system prompt ---
+You are a bilingual assistant that translates KO engineering requirements into concise JAPANESE instructions.
+
+Please convert the Korean prompt into concise Japanese that coding agents understand. Keep imperative mood.
+
+Persona directive: Translate with focus on code generation clarity, highlight required tooling and versions, avoid fluff.
+
+Style hint: Emphasize reproducible steps and include code if needed.
+```
+
+### 다국어 번역 테스트
+
+`--lang` 옵션을 사용하여 다양한 언어로 번역할 수 있습니다:
+
+#### 테스트 1: 일본어 번역
+
+```bash
+$ ./dist/tsl --lang "Japanese" "사용자 인증 시스템을 구현해주세요"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target] Japanese
+📝 [translation]
+ユーザー認証システムを実装してください。
+
+✅ Copied translation to clipboard
+```
+
+#### 테스트 2: 스페인어 번역
+
+```bash
+$ ./dist/tsl --lang "Spanish" "데이터베이스 마이그레이션 스크립트를 작성해주세요"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target] Spanish
+📝 [translation]
+Escribe un script de migración de base de datos.
+
+✅ Copied translation to clipboard
+```
+
+#### 테스트 3: 영어 번역
+
+```bash
+$ ./dist/tsl --lang "English" "REST API 엔드포인트를 설계해주세요"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target] English
+📝 [translation]
+Design a REST API endpoint.
+
+✅ Copied translation to clipboard
+```
+
+#### 테스트 4: 프랑스어 번역
+
+```bash
+$ ./dist/tsl --lang "French" "테스트 코드를 작성해주세요"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target] French
+📝 [translation]
+Rédigez le code de test.
+
+✅ Copied translation to clipboard
+```
+
+#### 테스트 5: 독일어 번역
+
+```bash
+$ ./dist/tsl --lang "German" "에러 핸들링을 개선해주세요"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target] German
+📝 [translation]
+Verbessern Sie die Fehlerbehandlung.
+
+✅ Copied translation to clipboard
+```
+
+#### 테스트 6: 중국어 번역
+
+```bash
+$ ./dist/tsl --lang "Chinese" "캐싱 전략을 최적화해주세요"
+```
+
+```
+🧑‍💼 [persona] programming — Strict coding assistant
+🎯 [target] Chinese
+📝 [translation]
+优化缓存策略。
+
+✅ Copied translation to clipboard
+```
+
 ## 개발 노트
 - `effect-ts`는 번역 → 클립보드 → 모델 호출 단계를 순차적 Effect로 모델링하여 오류 처리를 단순화합니다.
 - Provider 확장은 `providers/` 디렉터리에 드라이버를 추가하고 YAML에 매핑하면 됩니다.

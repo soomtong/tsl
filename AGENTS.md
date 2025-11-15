@@ -52,3 +52,7 @@ test("hello world", () => {
 
 Make commit: no prefix, Capital started. less than 80 length.
 use OPENAI GPT-5.1 Codex Mini
+
+## Communication
+
+Respond in Korean (한국어)
