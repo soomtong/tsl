@@ -12,6 +12,7 @@
     "persona": "env -u $OPENAI_API_KEY bun run src/poc3.ts",
     "prompt": "env -u $OPENAI_API_KEY bun run src/poc4.ts",
     "config": "bun run src/poc5.ts --init",
+    "clean": "rm -rf dist .*.bun-build",
     "build": "bun build src/main.ts --compile --minify --outfile dist/tsl",
     "build:bytecode": "bun run build:bytecode:macos && bun run build:bytecode:linux && bun run build:bytecode:windows",
     "build:bytecode:macos": "bun build src/main.ts --compile --minify --sourcemap --bytecode --target=bun-darwin-arm64 --outfile dist/tsl",
