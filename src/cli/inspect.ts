@@ -12,7 +12,7 @@ export const showLoadedConfig = (path: string) =>
     }
     const config = yield* loadConfig(path);
     console.log(`--- resolved config (${path}) ---`);
-    console.log(JSON.stringify(config, null, 2));
+    console.log(Bun.YAML.stringify(config, null, 2));
   }).pipe(
     Effect.catchAll((error) =>
       Effect.sync(() => {

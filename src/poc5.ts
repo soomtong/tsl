@@ -179,7 +179,7 @@ const writeConfig = (path: string, config: ConfigData) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     yield* ensureDirectoryExists(path);
-    const yaml = Bun.YAML.stringify(config);
+    const yaml = Bun.YAML.stringify(config, null, 2);
     yield* fs.writeFileString(path, yaml);
   });
 

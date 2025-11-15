@@ -46,7 +46,7 @@ const writeConfig = (path: string, config: AppConfig) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     yield* ensureDirectoryExists(path);
-    const yaml = Bun.YAML.stringify(config);
+    const yaml = Bun.YAML.stringify(config, null, 2);
     yield* fs.writeFileString(path, yaml);
   });
 
@@ -60,7 +60,7 @@ export const showConfigFile = (path: string) =>
     }
     const content = yield* fs.readFileString(path);
     console.log(`--- ${path} ---`);
-    console.log(JSON.stringify(Bun.YAML.parse(content), null, 2));
+    console.log(content);
   });
 
 const buildConfigFromPrompts = ({
