@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch"
     ],
-    "deny": [],
+    "deny": [
+      "Read(./docs/**)"
+    ],
     "ask": []
   }
 }

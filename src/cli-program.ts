@@ -26,6 +26,7 @@ import { makeTranslationRequest } from "./domain/translationRequest";
 import { MacosClipboardLayer } from "./infrastructure/clipboard/macosClipboard";
 import { loadConfig, resolveDefaultConfigPath, selectProviderOrFail } from "./infrastructure/config/configLoader";
 import { buildTranslatorLayer } from "./infrastructure/providers/translatorFactory";
+import packageJson from "../package.json";
 
 const translationCommand = Command.make(
   "tsl",
@@ -128,7 +129,7 @@ const translationCommand = Command.make(
 
 export const runCli = Command.run(translationCommand, {
   name: "tsl",
-  version: "0.1.0",
+  version: packageJson.version,
 });
 
 export const program = runCli(Bun.argv).pipe(
