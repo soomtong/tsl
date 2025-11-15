@@ -8,7 +8,7 @@ import * as Redacted from "effect/Redacted";
 const CONFIG_DIR_NAME = "tsl";
 const CONFIG_FILE_NAME = "config.yaml";
 
-type Provider = "openai" | "gemini";
+type Provider = "openai" | "google";
 type PersonaKey = "default" | "programming" | "research" | "review";
 
 type ProvidersEntry = {
@@ -41,8 +41,8 @@ const providerPrompt = Prompt.select<Provider>({
   choices: [
     { title: "openai", value: "openai", description: "Use OpenAI endpoints" },
     {
-      title: "gemini",
-      value: "gemini",
+      title: "google",
+      value: "google",
       description: "Use Google Gemini endpoints",
     },
   ],
@@ -129,7 +129,7 @@ const defaultConfig = (provider: Provider, apiKey: string): ConfigData => ({
     {
       name: provider,
       apiKey,
-      model: provider === "openai" ? "gpt-4o-mini" : "gemini-1.5-flash",
+      model: provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash",
     },
   ],
   translation: {

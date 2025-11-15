@@ -10,7 +10,7 @@ const providerPrompt = Prompt.select<ProviderName>({
   message: "Select provider",
   choices: [
     { title: "openai", value: "openai", description: "Use OpenAI endpoints" },
-    { title: "gemini", value: "gemini", description: "Use Google Gemini endpoints" },
+    { title: "google", value: "google", description: "Use Google Gemini endpoints" },
   ],
 });
 
@@ -76,7 +76,7 @@ const buildConfigFromPrompts = ({
     {
       name: provider,
       apiKey,
-      model: provider === "openai" ? "gpt-4o-mini" : "gemini-1.5-flash",
+      model: provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash",
     },
   ],
   translation: {

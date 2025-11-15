@@ -1,10 +1,9 @@
-import { generateText } from "@effect/ai/LanguageModel";
-import { withConfigOverride } from "@effect/ai-openai/OpenAiLanguageModel";
 import { Effect, pipe } from "effect";
 import type { AppConfig } from "../domain/config";
-import { AppConfigService } from "../domain/config";
+import { AppConfigService, getProvider } from "../domain/config";
 import { buildTranslationPrompt } from "../domain/prompt";
 import type { TranslationRequest } from "../domain/translationRequest";
+import { generateTextWithConfig } from "../infrastructure/providers/configOverride";
 import { Clipboard } from "./ports/clipboard";
 
 export type TranslationInput = {
@@ -25,16 +24,11 @@ const runSingleTranslation = (request: TranslationRequest, config: AppConfig) =>
   }
 
   const prompt = buildTranslationPrompt(request, config, profile);
+  const provider = getProvider(config);
 
+  // Generate text with provider-specific config override
   return pipe(
-    generateText({
-      prompt,
-      toolChoice: "none",
-    }),
-    withConfigOverride({
-      temperature: profile.temperature,
-      max_output_tokens: profile.maxTokens ?? undefined,
-    }),
+    generateTextWithConfig(provider.name, profile, prompt),
     Effect.map((response) => response.text.trim()),
     Effect.filterOrFail(
       (text) => text.length > 0,

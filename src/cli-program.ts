@@ -25,7 +25,7 @@ import type { TranslationRequest } from "./domain/translationRequest";
 import { makeTranslationRequest } from "./domain/translationRequest";
 import { MacosClipboardLayer } from "./infrastructure/clipboard/macosClipboard";
 import { loadConfig, resolveDefaultConfigPath, selectProviderOrFail } from "./infrastructure/config/configLoader";
-import { buildOpenAiTranslatorLayer } from "./infrastructure/providers/openaiTranslator";
+import { buildTranslatorLayer } from "./infrastructure/providers/translatorFactory";
 
 const translationCommand = Command.make(
   "tsl",
@@ -107,11 +107,11 @@ const translationCommand = Command.make(
 
       const sampleCount = yield* ensureLength(length);
 
-      const provider = selectProviderOrFail(configData, "openai");
+      const provider = selectProviderOrFail(configData);
 
       const runtimeLayer = Layer.mergeAll(
         Layer.succeed(AppConfigService, configData),
-        buildOpenAiTranslatorLayer(provider),
+        buildTranslatorLayer(provider),
         MacosClipboardLayer,
       );
 

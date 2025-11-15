@@ -39,9 +39,9 @@ providers:
   - name: openai
     apiKey: sk-...
     model: gpt-4.1-mini
-  - name: gemini
+  - name: google
     apiKey: g-...
-    model: gemini-1.5-pro
+    model: gemini-2.5-flash
   - name: openrouter
     apiKey: or-...
     model: meta-llama/llama-3-70b-instruct

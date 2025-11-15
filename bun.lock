@@ -6,6 +6,7 @@
       "name": "tsl",
       "dependencies": {
         "@effect/ai": "^0.32.1",
+        "@effect/ai-google": "^0.11.0",
         "@effect/ai-openai": "^0.35.0",
         "@effect/cli": "^0.72.1",
         "@effect/platform-bun": "^0.83.0",
@@ -38,6 +39,8 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.3.5", "", { "os": "win32", "cpu": "x64" }, "sha512-nUmR8gb6yvrKhtRgzwo/gDimPwnO5a4sCydf8ZS2kHIJhEmSmk+STsusr1LHTuM//wXppBawvSQi2xFXJCdgKQ=="],
 
     "@effect/ai": ["@effect/ai@0.32.1", "", { "dependencies": { "find-my-way-ts": "^0.1.6" }, "peerDependencies": { "@effect/experimental": "^0.57.0", "@effect/platform": "^0.93.0", "@effect/rpc": "^0.72.1", "effect": "^3.19.3" } }, "sha512-6qedQhnHigkRjNsUGaXKqvsbwhvQH3Ez3aePeROBRJi0c8q9tnR1E8qhQrTSjVPWcrv9AFtP0NRTr6iAHujGWQ=="],
+
+    "@effect/ai-google": ["@effect/ai-google@0.11.0", "", { "peerDependencies": { "@effect/ai": "^0.32.0", "@effect/experimental": "^0.57.0", "@effect/platform": "^0.93.0", "effect": "^3.19.0" } }, "sha512-OhUXYj0xQvW+NUJje9rBgbyzlNaqU+2XRQHY6FQMAz6nv+SLjGUysFZYN54B1SOHVDsaezqCL3HDQGx5+k8c9Q=="],
 
     "@effect/ai-openai": ["@effect/ai-openai@0.35.0", "", { "dependencies": { "gpt-tokenizer": "^2.9.0" }, "peerDependencies": { "@effect/ai": "^0.32.0", "@effect/experimental": "^0.57.0", "@effect/platform": "^0.93.0", "effect": "^3.19.0" } }, "sha512-cB5cXITMsO+bfesIDqJRCiAGH8r/P5ts32HwZ5HbAvUscrqFgZBQDIsypiOCHL2teWFaBbXLdiqbF/lL4Ct8wg=="],
 
