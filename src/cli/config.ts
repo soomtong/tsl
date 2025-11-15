@@ -80,8 +80,8 @@ const buildConfigFromPrompts = ({
     },
   ],
   translation: {
-    source: "ko",
-    target: "en",
+    source: "Korean",
+    target: "English",
     autoCopyToClipboard: true,
     formatter: DEFAULT_TRANSLATION_FORMATTER,
   },

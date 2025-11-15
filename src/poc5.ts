@@ -133,8 +133,8 @@ const defaultConfig = (provider: Provider, apiKey: string): ConfigData => ({
     },
   ],
   translation: {
-    source: "ko",
-    target: "en",
+    source: "Korean",
+    target: "English",
     autoCopyToClipboard: true,
     formatter: "Please convert the Korean prompt into concise English that coding agents understand. Keep imperative mood.",
   },
