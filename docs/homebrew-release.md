@@ -22,11 +22,13 @@
    - GitHub Release(`v0.1.0`) 생성 또는 업데이트, 산출물 첨부.
    - Tap 저장소의 `Formula/tsl.rb`를 최신 버전으로 커밋/푸시.
 
-## 4. 수동 검증
+## 4. Homebrew에서 설치
+배포된 tap은 아래 명령으로 설치 및 확인할 수 있다.
+
 ```bash
-brew tap <owner>/tsl
+brew tap soomtong/homebrew-tap https://github.com/soomtong/homebrew-tap
+brew info tsl
 brew install tsl
-tsl --help
 ```
 
 ## 5. 재실행/문제 해결
