@@ -11,7 +11,12 @@
     "persona": "env -u $OPENAI_API_KEY bun run src/poc3.ts",
     "prompt": "env -u $OPENAI_API_KEY bun run src/poc4.ts",
     "config": "bun run src/poc5.ts --init",
-    "build": "bun build src/main.ts --compile --outfile dist/tsl",
+    "build": "bun build src/main.ts --compile --minify --outfile dist/tsl",
+    "build:bytecode": "bun run build:bytecode:macos && bun run build:bytecode:linux && bun run build:bytecode:windows",
+    "build:bytecode:macos": "bun build src/main.ts --compile --minify --sourcemap --bytecode --target=bun-darwin-arm64 --outfile dist/tsl",
+    "build:bytecode:linux": "bun build src/main.ts --compile --minify --sourcemap --bytecode --target=bun-linux-x64 --outfile dist/tsl",
+    "build:bytecode:windows": "bun build src/main.ts --compile --minify --sourcemap --bytecode --target=bun-windows-x64 --outfile dist/tsl.exe",
+    "distribute:brew": "bun run src/scripts/brew-distribute.ts",
     "biome:check": "biome check src",
     "biome:format": "biome format src --write"
   },

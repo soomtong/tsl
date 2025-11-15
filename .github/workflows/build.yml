@@ -1,0 +1,57 @@
+name: Build Executables
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos
+            runner: macos-latest
+            artifact: tsl-macos
+            output_path: dist/tsl
+          - os: linux
+            runner: ubuntu-latest
+            artifact: tsl-linux
+            output_path: dist/tsl
+          - os: windows
+            runner: windows-latest
+            artifact: tsl-windows
+            output_path: dist/tsl.exe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build executable
+        run: bun run build:bytecode:${{ matrix.os }}
+
+      - name: Make artifact executable
+        if: ${{ runner.os != 'Windows' }}
+        run: chmod +x ${{ matrix.output_path }}
+
+      - name: Upload artifact
+        # Use these outputs when running `bun run distribute:brew`
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.output_path }}
+

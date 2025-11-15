@@ -1,12 +1,12 @@
 # tsl: Translator in console
 
-한국어 프롬프트를 자동으로 영어로 번역해, 번역 결과를 클립보드에 복사하는 Bun 기반 CLI입니다. `effect-ts`로 부작용을 제어하고, YAML 설정 파일을 통해 모델·키·프롬프트 전략을 관리합니다.
+한국어 프롬프트를 영어로 번역해, 번역 결과를 클립보드에 복사하는 Bun 기반 CLI입니다. `effect-ts`로 부작용을 제어하고, YAML 설정 파일을 통해 모델·키·프롬프트 전략을 관리합니다.
 
 ## 주요 특징
 - Bun + TypeScript + effect-ts 기반의 경량 CLI
 - 한국어 입력 → 영어 번역 → 클립보드 복사 → 선택한 모델 호출까지 일괄 처리
 - Provider 다중 선택 지원(OpenAI, OpenRouter, Gemini 등) 및 모델별 설정
-- `tsl programming:en` 같은 도메인 프리셋으로 일관된 프롬프트 스타일 제공
+- `tsl --persona programming` 같은 도메인 프리셋으로 일관된 프롬프트 스타일 제공
 - `--length` 옵션으로 다중 예제(샘플) 생성
 
 ## 시스템 요구 사항
