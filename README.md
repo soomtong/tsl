@@ -211,6 +211,7 @@ $ ./dist/tsl --lang "Chinese" "캐싱 전략을 최적화해주세요"
 - `effect-ts`는 번역 → 클립보드 → 모델 호출 단계를 순차적 Effect로 모델링하여 오류 처리를 단순화합니다.
 - Provider 확장은 `providers/` 디렉터리에 드라이버를 추가하고 YAML에 매핑하면 됩니다.
 - 테스트는 effect-ts mock layer를 이용해 번역/클립보드/HTTP를 분리해 작성합니다.
+- Homebrew 배포 및 릴리스 자동화는 `docs/homebrew-release.md`를 참고하세요.
 
 ## Roadmap
 - Provider 연결 상태 자동 점검(`tsl --doctor`)

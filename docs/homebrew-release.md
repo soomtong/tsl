@@ -15,8 +15,9 @@
 | `HOMEBREW_TAP_BRANCH` | 선택. tap 저장소 기본 브랜치가 `main`이 아니면 지정. |
 
 ## 3. 태그 릴리스
-1. `git tag v0.1.0 && git push origin v0.1.0`.
-2. GitHub Actions가 자동으로 실행되어 다음을 수행한다.
+1. `npm version patch` (또는 `npm version minor|major`)로 `package.json`의 버전을 반드시 갱신하고 커밋한다.
+2. `git push origin HEAD && git push origin v0.1.0`.
+3. GitHub Actions가 자동으로 실행되어 다음을 수행한다.
    - macOS 바이너리를 빌드 (`bun run release`).
    - `dist/tsl-macos.tar.gz`와 `dist/homebrew/tsl.rb` 생성.
    - GitHub Release(`v0.1.0`) 생성 또는 업데이트, 산출물 첨부.
