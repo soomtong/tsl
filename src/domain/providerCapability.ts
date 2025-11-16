@@ -26,6 +26,12 @@ const providerCapabilities: Record<ProviderName, ProviderCapability> = {
     supportsMaxTokens: true,
     supportsTopP: true,
   },
+  openrouter: {
+    // OpenRouter uses OpenAI-compatible API and supports all standard parameters
+    supportsTemperature: true,
+    supportsMaxTokens: true,
+    supportsTopP: true,
+  },
 };
 
 /**

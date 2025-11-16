@@ -1,7 +1,7 @@
 import * as Context from "effect/Context";
 import type { PersonaKey } from "./persona";
 
-export type ProviderName = "openai" | "google";
+export type ProviderName = "openai" | "google" | "openrouter";
 
 export type ProviderConfig = {
   readonly name: ProviderName;

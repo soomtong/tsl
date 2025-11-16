@@ -32,6 +32,7 @@
     "@effect/ai": "^0.32.1",
     "@effect/ai-google": "^0.11.0",
     "@effect/ai-openai": "^0.35.0",
+    "@effect/ai-openrouter": "^0.6.0",
     "@effect/cli": "^0.72.1",
     "@effect/platform-bun": "^0.83.0",
     "effect": "^3.19.3"
