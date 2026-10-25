@@ -45,6 +45,11 @@ export const promptInfoOption = Flag.Boolean("prompt").pipe(
   Flag.withDescription("Print the current system prompt and persona settings"),
 );
 
+export const doctorOption = Flag.Boolean("doctor").pipe(
+  Flag.withDefault(false),
+  Flag.withDescription("Check config, provider connectivity, and clipboard availability"),
+);
+
 export const promptInput = Prompt.String({
   message: "Enter the Korean instruction to translate",
   validate: (value) => {

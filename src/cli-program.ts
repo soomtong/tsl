@@ -5,9 +5,11 @@ import * as Option from "effect/Option";
 import packageJson from "../package.json";
 import { executeTranslation } from "./application/translation";
 import { runInitFlow, showConfigFile } from "./cli/config";
+import { runDoctor } from "./cli/doctor";
 import { showLoadedConfig } from "./cli/inspect";
 import {
   configPathOption,
+  doctorOption,
   ensureLength,
   initOption,
   langOption,
@@ -41,8 +43,9 @@ const translationCommand = Command.make(
     showConfig: showConfigOption,
     loadShow: loadShowOption,
     promptInfo: promptInfoOption,
+    doctor: doctorOption,
   },
-  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow, promptInfo }) =>
+  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow, promptInfo, doctor }) =>
     Effect.gen(function* () {
       const configPathOverride = Option.getOrUndefined(configPath);
       const defaultConfigPath = resolveDefaultConfigPath();
@@ -64,6 +67,11 @@ const translationCommand = Command.make(
       }
 
       const configData = yield* loadConfig(configPathOverride);
+
+      if (doctor) {
+        yield* runDoctor(configData);
+        return;
+      }
 
       const personaKey = Option.getOrElse(persona, () => configData.preferredPersona);
       const personaProfile = yield* requirePersona(personaKey);
@@ -118,6 +126,8 @@ const translationCommand = Command.make(
       yield* logClipboardStatus(result.copiedToClipboard, configData.translation.autoCopyToClipboard);
     }),
 ).pipe(Command.withDescription("Translate Korean prompts to English and copy results to the clipboard."));
+
+export const runCli = (args: ReadonlyArray<string>) => Command.runWith(translationCommand, { version: packageJson.version })(args);
 
 export const program = Command.run(translationCommand, {
   version: packageJson.version,

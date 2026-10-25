@@ -2,6 +2,8 @@ import { BunRuntime, BunServices } from "@effect/platform-bun";
 import * as Console from "effect/Console";
 import { CliError } from "effect/cli";
 import * as Effect from "effect/Effect";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import * as Layer from "effect/Layer";
 import { program } from "./cli-program";
 
 const reportFailure = Effect.catchIf(
@@ -12,4 +14,6 @@ const reportFailure = Effect.catchIf(
     ),
 );
 
-BunRuntime.runMain(program.pipe(Effect.provide(BunServices.layer), reportFailure), { disableErrorReporting: true });
+BunRuntime.runMain(program.pipe(Effect.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)), reportFailure), {
+  disableErrorReporting: true,
+});
