@@ -3,7 +3,11 @@ import * as Effect from "effect/Effect";
 import { TranslationError } from "../domain/errors";
 import { personaKeys } from "../domain/persona";
 
-export const promptArg = Argument.String("prompt").pipe(Argument.optional);
+export const promptArg = Argument.String("prompt").pipe(
+  Argument.variadic,
+  Argument.optional,
+  Argument.withDescription("Korean prompt; multiple arguments are joined with spaces"),
+);
 
 export const personaOption = Flag.Literals("persona", personaKeys).pipe(
   Flag.optional,

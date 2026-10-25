@@ -173,4 +173,40 @@ describe("runCli", () => {
     expect(Exit.isFailure(exit)).toBe(true);
     expect(output).toContain("⛔️ provider:google — HTTP 401");
   });
+  test("joins unquoted prompt tokens and still parses later flags", async () => {
+    let captured = "";
+    let calls = 0;
+    const server = Bun.serve({
+      port: 0,
+      async fetch(request) {
+        if (new URL(request.url).pathname !== "/v1/chat/completions") {
+          return new Response("not found", { status: 404 });
+        }
+        const body = (await request.json()) as { messages?: Array<{ content?: unknown }>; model: string };
+        captured = (body.messages ?? [])
+          .map((message) => (typeof message.content === "string" ? message.content : JSON.stringify(message.content)))
+          .join("\n");
+        calls += 1;
+        return Response.json({
+          id: `chatcmpl-${calls}`,
+          object: "chat.completion",
+          created: Math.floor(Date.now() / 1000),
+          model: body.model,
+          choices: [{ index: 0, message: { role: "assistant", content: `translated-${calls}` }, finish_reason: "stop" }],
+          usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+        });
+      },
+    });
+    servers.push(server);
+    const path = await writeConfig(
+      baseConfig(`  - name: google\n    apiKey: sk-test\n    model: gemini-2.5-flash\n    apiUrl: http://127.0.0.1:${server.port}/v1`),
+    );
+
+    const { exit, output } = await Effect.runPromise(run(["인증", "시스템을", "구현해주세요", "--length", "2", "--config-path", path]));
+
+    expect(Exit.isSuccess(exit)).toBe(true);
+    expect(captured).toContain("인증 시스템을 구현해주세요");
+    expect(output).toContain("translated-1");
+    expect(output).toContain("translated-2");
+  });
 });

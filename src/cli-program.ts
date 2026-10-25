@@ -100,10 +100,9 @@ const translationCommand = Command.make(
         return;
       }
 
-      const finalPrompt = yield* Option.match(prompt, {
-        onSome: Effect.succeed,
-        onNone: () => promptInput,
-      });
+      const promptTokens = Option.getOrElse(prompt, () => [] as ReadonlyArray<string>);
+      const promptText = promptTokens.join(" ").trim();
+      const finalPrompt = promptText.length > 0 ? promptText : yield* promptInput;
 
       const request = yield* makeTranslationRequest({
         sourceText: finalPrompt,
