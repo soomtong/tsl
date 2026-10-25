@@ -107,6 +107,52 @@ describe("runCli", () => {
     expect(output).not.toContain("sk-secret");
   });
 
+  test("doctor validates OpenRouter keys against /key, not the public /models", async () => {
+    const server = Bun.serve({
+      port: 0,
+      fetch(request) {
+        const path = new URL(request.url).pathname;
+        if (path === "/v1/key") return Response.json({ data: { label: "test" } });
+        if (path === "/v1/models") return new Response("public endpoint", { status: 200 });
+        return new Response("not found", { status: 404 });
+      },
+    });
+    servers.push(server);
+    const path = await writeConfig(
+      baseConfig(
+        `  - name: openrouter\n    apiKey: sk-or-test\n    model: google/gemini-2.5-flash\n    apiUrl: http://127.0.0.1:${server.port}/v1`,
+      ),
+    );
+
+    const { exit, output } = await Effect.runPromise(run(["--doctor", "--config-path", path]));
+
+    expect(Exit.isSuccess(exit)).toBe(true);
+    expect(output).toContain("provider:openrouter — HTTP 200");
+  });
+
+  test("doctor fails when OpenRouter rejects the key", async () => {
+    const server = Bun.serve({
+      port: 0,
+      fetch(request) {
+        const path = new URL(request.url).pathname;
+        if (path === "/v1/key") return new Response('{"error":{"message":"User not found.","code":401}}', { status: 401 });
+        if (path === "/v1/models") return Response.json({ data: [] });
+        return new Response("not found", { status: 404 });
+      },
+    });
+    servers.push(server);
+    const path = await writeConfig(
+      baseConfig(
+        `  - name: openrouter\n    apiKey: sk-or-test\n    model: google/gemini-2.5-flash\n    apiUrl: http://127.0.0.1:${server.port}/v1`,
+      ),
+    );
+
+    const { exit, output } = await Effect.runPromise(run(["--doctor", "--config-path", path]));
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(output).toContain("⛔️ provider:openrouter — HTTP 401 — authentication failed");
+  });
+
   test("doctor fails when a provider rejects the key", async () => {
     const server = Bun.serve({
       port: 0,

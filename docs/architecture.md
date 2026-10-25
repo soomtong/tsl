@@ -47,8 +47,11 @@ Boolean 플래그는 v4에서 기본값이 없으므로 `Flag.withDefault(false)
 모든 Provider는 `LanguageModel.LanguageModel` 레이어를 제공하며, 요청별 `temperature`/`maxTokens`는 각 패키지의 `withConfigOverride`로 적용한다.
 OpenAI는 `max_output_tokens`, OpenAI 호환 Provider는 `max_tokens`를 사용한다.
 
+`tsl --doctor`는 인증이 필요한 엔드포인트로 키를 검증한다. OpenRouter의 `/models`는 공개 엔드포인트라 잘못된 키도 200을 반환하므로 `/key`를 사용한다. OpenAI/Google은 `/models`를 사용한다.
+
 ## 설정 해석
 
+0. 경로: `--config-path` > `$XDG_CONFIG_HOME/tsl/config.yaml` > `$HOME/.config/tsl/config.yaml`. YAML만 읽는다.
 1. `Bun.YAML.parse`로 YAML을 읽고 `Schema`로 부분 문서를 검증한다.
 2. `profiles`는 `defaultProfiles`에 덮어쓴다.
 3. `apiKey`의 `${ENV:NAME}`은 `Bun.env`에서 해석한다.

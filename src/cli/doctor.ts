@@ -16,11 +16,19 @@ const DEFAULT_PROVIDER_URLS = {
   openrouter: "https://openrouter.ai/api/v1",
 } as const;
 
-const modelsUrl = (provider: ProviderConfig) => `${(provider.apiUrl ?? DEFAULT_PROVIDER_URLS[provider.name]).replace(/\/+$/, "")}/models`;
+const AUTH_ENDPOINTS = {
+  openai: "/models",
+  google: "/models",
+  // OpenRouter's /models endpoint is public, so only /key validates the API key.
+  openrouter: "/key",
+} as const;
+
+const healthUrl = (provider: ProviderConfig) =>
+  `${(provider.apiUrl ?? DEFAULT_PROVIDER_URLS[provider.name]).replace(/\/+$/, "")}${AUTH_ENDPOINTS[provider.name]}`;
 
 const checkProvider = (provider: ProviderConfig): Effect.Effect<DoctorCheck, never, HttpClient.HttpClient> =>
   Effect.gen(function* () {
-    const request = HttpClientRequest.get(modelsUrl(provider)).pipe(HttpClientRequest.bearerToken(provider.apiKey));
+    const request = HttpClientRequest.get(healthUrl(provider)).pipe(HttpClientRequest.bearerToken(provider.apiKey));
     const status = yield* HttpClient.execute(request).pipe(
       Effect.timeout("5 seconds"),
       Effect.match({
@@ -29,10 +37,18 @@ const checkProvider = (provider: ProviderConfig): Effect.Effect<DoctorCheck, nev
       }),
     );
 
+    const authFailed = status === 401 || status === 403;
+    const detail =
+      status === 0
+        ? `unreachable (${provider.model})`
+        : authFailed
+          ? `HTTP ${status} — authentication failed, check apiKey (${provider.model})`
+          : `HTTP ${status} (${provider.model})`;
+
     return {
       name: `provider:${provider.name}`,
       ok: status >= 200 && status < 300,
-      detail: status === 0 ? `unreachable (${provider.model})` : `HTTP ${status} (${provider.model})`,
+      detail,
     };
   });
 
