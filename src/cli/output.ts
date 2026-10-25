@@ -1,27 +1,32 @@
+import * as Console from "effect/Console";
+import * as Effect from "effect/Effect";
 import type { AppConfig, ProfileConfig } from "../domain/config";
 import type { PersonaPreset } from "../domain/persona";
 
-export const logPersonaAndTarget = (persona: PersonaPreset, targetLanguage: string) => {
-  console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
-  console.log(`🎯 [target] ${targetLanguage}`);
-};
-
-export const logTranslationOutputs = (outputs: ReadonlyArray<string>) => {
-  outputs.forEach((text, index) => {
-    const label = outputs.length === 1 ? "[translation]" : `[translation ${index + 1}]`;
-    console.log(`📝 ${label}`);
-    console.log(text);
-    console.log("");
+export const logPersonaAndTarget = (persona: PersonaPreset, targetLanguage: string) =>
+  Effect.gen(function* () {
+    yield* Console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
+    yield* Console.log(`🎯 [target] ${targetLanguage}`);
   });
-};
 
-export const logClipboardStatus = (copied: boolean, autoCopyEnabled: boolean) => {
-  if (copied) {
-    console.log("✅ Copied translation to clipboard");
-  } else if (!autoCopyEnabled) {
-    console.log("ℹ️ Auto-copy disabled in config");
-  }
-};
+export const logTranslationOutputs = (outputs: ReadonlyArray<string>) =>
+  Effect.forEach(outputs, (text, index) =>
+    Effect.gen(function* () {
+      const label = outputs.length === 1 ? "[translation]" : `[translation ${index + 1}]`;
+      yield* Console.log(`📝 ${label}`);
+      yield* Console.log(text);
+      yield* Console.log("");
+    }),
+  );
+
+export const logClipboardStatus = (copied: boolean, autoCopyEnabled: boolean) =>
+  Effect.gen(function* () {
+    if (copied) {
+      yield* Console.log("✅ Copied translation to clipboard");
+    } else if (!autoCopyEnabled) {
+      yield* Console.log("ℹ️ Auto-copy disabled in config");
+    }
+  });
 
 export const printPromptDetails = ({
   persona,
@@ -35,17 +40,18 @@ export const printPromptDetails = ({
   readonly config: AppConfig;
   readonly targetLanguage: string;
   readonly systemMessage: string;
-}) => {
-  console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
-  console.log(`🎯 [target language] ${targetLanguage}`);
-  console.log(`🌡️[temperature] ${profile.temperature}`);
-  console.log(`📏 [maxTokens] ${profile.maxTokens ?? "provider default"}`);
-  console.log(`🎨 [styleHint] ${profile.styleHint ?? "none"}`);
-  console.log(
-    `⚙️[translation settings] source=${config.translation.source} autoCopy=${config.translation.autoCopyToClipboard ? "on" : "off"}`,
-  );
-  console.log("🪄 [formatter]");
-  console.log(config.translation.formatter);
-  console.log("--- system prompt ---");
-  console.log(systemMessage);
-};
+}) =>
+  Effect.gen(function* () {
+    yield* Console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
+    yield* Console.log(`🎯 [target language] ${targetLanguage}`);
+    yield* Console.log(`🌡️[temperature] ${profile.temperature}`);
+    yield* Console.log(`📏 [maxTokens] ${profile.maxTokens ?? "provider default"}`);
+    yield* Console.log(`🎨 [styleHint] ${profile.styleHint ?? "none"}`);
+    yield* Console.log(
+      `⚙️[translation settings] source=${config.translation.source} autoCopy=${config.translation.autoCopyToClipboard ? "on" : "off"}`,
+    );
+    yield* Console.log("🪄 [formatter]");
+    yield* Console.log(config.translation.formatter);
+    yield* Console.log("--- system prompt ---");
+    yield* Console.log(systemMessage);
+  });

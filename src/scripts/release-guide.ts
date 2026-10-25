@@ -35,13 +35,9 @@ if (!step || step === "all") {
     console.log(messages[key]);
     console.log("");
   }
-  process.exit(0);
-}
-
-if (!messages[step]) {
+} else if (messages[step]) {
+  console.log(messages[step]);
+} else {
   console.log("Usage: bun run src/scripts/release-guide.ts [all|publish|tap|verify|automate]");
-  process.exit(1);
+  process.exitCode = 1;
 }
-
-console.log(messages[step]);
-

@@ -1,4 +1,4 @@
-import { Prompt } from "@effect/ai";
+import { Prompt } from "effect/ai";
 import type { AppConfig, ProfileConfig } from "./config";
 import type { TranslationRequest } from "./translationRequest";
 

@@ -1,12 +1,14 @@
-import { Prompt } from "@effect/cli";
-import * as FileSystem from "@effect/platform/FileSystem";
-import { Effect } from "effect";
+import * as Console from "effect/Console";
+import { Prompt } from "effect/cli";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Path from "effect/Path";
 import * as Redacted from "effect/Redacted";
 import type { AppConfig, ProviderName } from "../domain/config";
 import { DEFAULT_TRANSLATION_FORMATTER, defaultProfiles } from "../domain/config";
 import type { PersonaKey } from "../domain/persona";
 
-const providerPrompt = Prompt.select<ProviderName>({
+const providerPrompt = Prompt.Select<ProviderName>({
   message: "Select provider",
   choices: [
     { title: "openai", value: "openai", description: "Use OpenAI endpoints" },
@@ -15,7 +17,7 @@ const providerPrompt = Prompt.select<ProviderName>({
   ],
 });
 
-const apiKeyPrompt = Prompt.password({
+const apiKeyPrompt = Prompt.Password({
   message: "Enter API key",
   validate: (value) => {
     const trimmed = value.trim();
@@ -23,7 +25,7 @@ const apiKeyPrompt = Prompt.password({
   },
 });
 
-const openrouterModelPrompt = Prompt.select<string>({
+const openrouterModelPrompt = Prompt.Select<string>({
   message: "Select OpenRouter model",
   choices: [
     // Free models
@@ -46,7 +48,7 @@ const openrouterModelPrompt = Prompt.select<string>({
   ],
 });
 
-const preferredPersonaPrompt = Prompt.select<PersonaKey>({
+const preferredPersonaPrompt = Prompt.Select<PersonaKey>({
   message: "Preferred persona",
   choices: [
     { title: "default", value: "default" },
@@ -56,22 +58,12 @@ const preferredPersonaPrompt = Prompt.select<PersonaKey>({
   ],
 });
 
-const ensureDirectoryExists = (path: string) =>
-  Effect.gen(function* () {
-    const dir = path.split("/").slice(0, -1).join("/");
-    if (dir.length === 0) {
-      return;
-    }
-    const fs = yield* FileSystem.FileSystem;
-    yield* fs.makeDirectory(dir, { recursive: true });
-  });
-
 const writeConfig = (path: string, config: AppConfig) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    yield* ensureDirectoryExists(path);
-    const yaml = Bun.YAML.stringify(config, null, 2);
-    yield* fs.writeFileString(path, yaml);
+    const pathService = yield* Path.Path;
+    yield* fs.makeDirectory(pathService.dirname(path), { recursive: true });
+    yield* fs.writeFileString(path, Bun.YAML.stringify(config, null, 2));
   });
 
 export const showConfigFile = (path: string) =>
@@ -79,12 +71,12 @@ export const showConfigFile = (path: string) =>
     const fs = yield* FileSystem.FileSystem;
     const exists = yield* fs.exists(path);
     if (!exists) {
-      console.log(`No config found at ${path}. Use --init to create one.`);
+      yield* Console.log(`No config found at ${path}. Use --init to create one.`);
       return;
     }
     const content = yield* fs.readFileString(path);
-    console.log(`--- ${path} ---`);
-    console.log(content);
+    yield* Console.log(`--- ${path} ---`);
+    yield* Console.log(content);
   });
 
 const buildConfigFromPrompts = ({
@@ -99,11 +91,7 @@ const buildConfigFromPrompts = ({
   readonly model?: string;
 }): AppConfig => {
   const defaultModel =
-    provider === "openai"
-      ? "gpt-4o-mini"
-      : provider === "google"
-        ? "gemini-2.5-flash"
-        : "openrouter/sherlock-dash-alpha";
+    provider === "openai" ? "gpt-4o-mini" : provider === "google" ? "gemini-2.5-flash" : "openrouter/sherlock-dash-alpha";
 
   return {
     providers: [
@@ -119,13 +107,10 @@ const buildConfigFromPrompts = ({
       autoCopyToClipboard: true,
       formatter: DEFAULT_TRANSLATION_FORMATTER,
     },
-    profiles: cloneProfiles(defaultProfiles),
+    profiles: defaultProfiles,
     preferredPersona,
   };
 };
-
-const cloneProfiles = (profiles: typeof defaultProfiles) =>
-  Object.fromEntries(Object.entries(profiles).map(([key, value]) => [key, { ...value }])) as typeof defaultProfiles;
 
 export const runInitFlow = (path: string) =>
   Effect.gen(function* () {
@@ -145,5 +130,5 @@ export const runInitFlow = (path: string) =>
     });
 
     yield* writeConfig(path, config);
-    console.log(`✅ Configuration written to ${path}`);
+    yield* Console.log(`✅ Configuration written to ${path}`);
   });

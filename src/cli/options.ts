@@ -1,39 +1,51 @@
-import { Args, Options, Prompt } from "@effect/cli";
-import { Effect } from "effect";
+import { Argument, Flag, Prompt } from "effect/cli";
+import * as Effect from "effect/Effect";
+import { TranslationError } from "../domain/errors";
 import { personaKeys } from "../domain/persona";
 
-export const promptArg = Args.optional(Args.text({ name: "prompt" }));
+export const promptArg = Argument.String("prompt").pipe(Argument.optional);
 
-export const personaOption = Options.choice("persona", personaKeys).pipe(
-  Options.optional,
-  Options.withDescription("Selects the translation persona preset"),
+export const personaOption = Flag.Literals("persona", personaKeys).pipe(
+  Flag.optional,
+  Flag.withDescription("Selects the translation persona preset"),
 );
 
-export const langOption = Options.text("lang")
-  .pipe(Options.optional)
-  .pipe(Options.withDescription("Override target language (default: config target)"));
-
-export const lengthOption = Options.integer("length")
-  .pipe(Options.withDefault(1))
-  .pipe(Options.withDescription("Number of translation samples to generate (default: 1)"));
-
-export const configPathOption = Options.text("config-path")
-  .pipe(Options.optional)
-  .pipe(Options.withDescription("Override tsl config path (default: ~/.config/tsl/config.yaml)"));
-
-export const initOption = Options.boolean("init").pipe(Options.withDescription("Initialize or overwrite the tsl config and exit"));
-
-export const showConfigOption = Options.boolean("config").pipe(Options.withDescription("Show the current tsl config and exit"));
-
-export const loadShowOption = Options.boolean("load-show").pipe(
-  Options.withDescription("Show the resolved config that main loads from the XDG path"),
+export const langOption = Flag.String("lang").pipe(
+  Flag.optional,
+  Flag.withDescription("Override target language (default: config target)"),
 );
 
-export const promptInfoOption = Options.boolean("prompt").pipe(
-  Options.withDescription("Print the current system prompt and persona settings"),
+export const lengthOption = Flag.Int("length").pipe(
+  Flag.withDefault(1),
+  Flag.withDescription("Number of translation samples to generate (default: 1)"),
 );
 
-export const promptInput = Prompt.text({
+export const configPathOption = Flag.String("config-path").pipe(
+  Flag.optional,
+  Flag.withDescription("Override tsl config path (default: ~/.config/tsl/config.yaml)"),
+);
+
+export const initOption = Flag.Boolean("init").pipe(
+  Flag.withDefault(false),
+  Flag.withDescription("Initialize or overwrite the tsl config and exit"),
+);
+
+export const showConfigOption = Flag.Boolean("config").pipe(
+  Flag.withDefault(false),
+  Flag.withDescription("Show the current tsl config and exit"),
+);
+
+export const loadShowOption = Flag.Boolean("load-show").pipe(
+  Flag.withDefault(false),
+  Flag.withDescription("Show the resolved config that the CLI loads from the XDG path"),
+);
+
+export const promptInfoOption = Flag.Boolean("prompt").pipe(
+  Flag.withDefault(false),
+  Flag.withDescription("Print the current system prompt and persona settings"),
+);
+
+export const promptInput = Prompt.String({
   message: "Enter the Korean instruction to translate",
   validate: (value) => {
     const trimmed = value.trim();
@@ -41,5 +53,5 @@ export const promptInput = Prompt.text({
   },
 });
 
-export const ensureLength = (value: number) =>
-  value <= 0 ? Effect.fail(new Error("--length must be greater than 0")) : Effect.succeed(value);
+export const ensureLength = (value: number): Effect.Effect<number, TranslationError> =>
+  value <= 0 ? Effect.fail(new TranslationError({ message: "--length must be greater than 0" })) : Effect.succeed(value);

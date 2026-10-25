@@ -1,9 +1,11 @@
-import { Effect, pipe } from "effect";
+import type { LanguageModel } from "effect/ai";
+import * as Effect from "effect/Effect";
 import type { AppConfig } from "../domain/config";
 import { AppConfigService, getProvider } from "../domain/config";
+import { TranslationError } from "../domain/errors";
 import { buildTranslationPrompt } from "../domain/prompt";
 import type { TranslationRequest } from "../domain/translationRequest";
-import { generateTextWithConfig } from "../infrastructure/providers/configOverride";
+import { generateTextWithConfig } from "../infrastructure/providers/providerConfig";
 import { Clipboard } from "./ports/clipboard";
 
 export type TranslationInput = {
@@ -17,25 +19,25 @@ export type TranslationResult = {
   readonly targetLanguage: string;
 };
 
-const runSingleTranslation = (request: TranslationRequest, config: AppConfig) => {
-  const profile = config.profiles[request.persona.key];
-  if (!profile) {
-    return Effect.fail(new Error(`No profile defined for persona ${request.persona.key}`));
-  }
+const runSingleTranslation = (request: TranslationRequest, config: AppConfig) =>
+  Effect.gen(function* () {
+    const profile = config.profiles[request.persona.key];
+    if (!profile) {
+      return yield* new TranslationError({ message: `No profile defined for persona ${request.persona.key}` });
+    }
 
-  const prompt = buildTranslationPrompt(request, config, profile);
-  const provider = getProvider(config);
+    const provider = yield* getProvider(config);
+    const prompt = buildTranslationPrompt(request, config, profile);
 
-  // Generate text with provider-specific config override
-  return pipe(
-    generateTextWithConfig(provider.name, profile, prompt),
-    Effect.map((response) => response.text.trim()),
-    Effect.filterOrFail(
-      (text) => text.length > 0,
-      () => new Error("Language model returned empty text"),
-    ),
-  );
-};
+    const response = yield* generateTextWithConfig(provider.name, profile, prompt);
+    const text = response.text.trim();
+
+    if (text.length === 0) {
+      return yield* new TranslationError({ message: "Language model returned empty text" });
+    }
+
+    return text;
+  });
 
 export const executeTranslation = ({ request, sampleCount }: TranslationInput) =>
   Effect.gen(function* () {
@@ -45,7 +47,6 @@ export const executeTranslation = ({ request, sampleCount }: TranslationInput) =
     const iterations = Array.from({ length: Math.max(sampleCount, 1) }, (_, index) => index);
 
     const translations = yield* Effect.forEach(iterations, () => runSingleTranslation(request, config), {
-      batching: "inherit",
       concurrency: "unbounded",
     });
 
@@ -63,3 +64,5 @@ export const executeTranslation = ({ request, sampleCount }: TranslationInput) =
       targetLanguage: request.targetLanguage,
     } satisfies TranslationResult;
   });
+
+export type TranslationRequirements = LanguageModel.LanguageModel | AppConfigService | Clipboard;

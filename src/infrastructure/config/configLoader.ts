@@ -1,24 +1,83 @@
-import * as FileSystem from "@effect/platform/FileSystem";
-import { Effect, Option, pipe } from "effect";
-import { DEFAULT_TRANSLATION_FORMATTER, defaultProfiles } from "../../domain/config";
-import type { AppConfig, ProviderConfig, ProviderName } from "../../domain/config";
-import { fallbackPersonaKey } from "../../domain/persona";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+import type { AppConfig, ProfileConfig, ProviderConfig, TranslationSection } from "../../domain/config";
+import { defaultProfiles, defaultTranslationSection } from "../../domain/config";
+import { ConfigError } from "../../domain/errors";
 import type { PersonaKey } from "../../domain/persona";
+import { fallbackPersonaKey, personaKeys } from "../../domain/persona";
 
 const ENV_PATTERN = /^\$\{ENV:([A-Z0-9_]+)\}$/i;
 
-const requireEnvVar = (name: string) =>
-  pipe(
-    Effect.fromNullable(Bun.env[name] ?? process.env[name]),
-    Effect.orElseFail(() => new Error(`Missing required env var: ${name}`)),
+const ProviderConfigSchema = Schema.Struct({
+  name: Schema.Literals(["openai", "google", "openrouter"]),
+  apiKey: Schema.String,
+  model: Schema.String,
+  apiUrl: Schema.optional(Schema.String),
+});
+
+const ProfileOverrideSchema = Schema.Struct({
+  temperature: Schema.optional(Schema.Number),
+  maxTokens: Schema.optional(Schema.Number),
+  styleHint: Schema.optional(Schema.String),
+});
+
+const ProfilesOverrideSchema = Schema.Struct({
+  default: Schema.optional(ProfileOverrideSchema),
+  programming: Schema.optional(ProfileOverrideSchema),
+  research: Schema.optional(ProfileOverrideSchema),
+  review: Schema.optional(ProfileOverrideSchema),
+});
+
+const TranslationOverrideSchema = Schema.Struct({
+  source: Schema.optional(Schema.String),
+  target: Schema.optional(Schema.String),
+  autoCopyToClipboard: Schema.optional(Schema.Boolean),
+  formatter: Schema.optional(Schema.String),
+});
+
+const ConfigDocumentSchema = Schema.Struct({
+  providers: Schema.optional(Schema.Array(ProviderConfigSchema)),
+  translation: Schema.optional(TranslationOverrideSchema),
+  profiles: Schema.optional(ProfilesOverrideSchema),
+  preferredPersona: Schema.optional(Schema.Literals(personaKeys)),
+});
+
+type ConfigDocument = {
+  readonly providers?: ReadonlyArray<ProviderConfig>;
+  readonly translation?: Partial<TranslationSection>;
+  readonly profiles?: Partial<Record<PersonaKey, Partial<ProfileConfig>>>;
+  readonly preferredPersona?: PersonaKey;
+};
+
+export const parseConfigDocument = (raw: string): Effect.Effect<ConfigDocument, ConfigError> =>
+  Effect.try({
+    try: () => Bun.YAML.parse(raw) as unknown,
+    catch: (error) => new ConfigError({ message: `Invalid YAML: ${error instanceof Error ? error.message : String(error)}` }),
+  }).pipe(
+    Effect.flatMap((parsed) =>
+      Schema.decodeUnknownEffect(ConfigDocumentSchema)(parsed).pipe(
+        Effect.mapError((error) => new ConfigError({ message: `Invalid config: ${error.message}` })),
+      ),
+    ),
   );
 
-const substituteEnv = (value: string) => {
+const requireEnvVar = (name: string): Effect.Effect<string, ConfigError> =>
+  Effect.gen(function* () {
+    const value = Bun.env[name];
+    if (value === undefined || value.length === 0) {
+      return yield* new ConfigError({ message: `Missing required env var: ${name}` });
+    }
+    return value;
+  });
+
+const substituteEnv = (value: string): Effect.Effect<string, ConfigError> => {
   const match = value.match(ENV_PATTERN);
-  if (!match) {
+  const envVar = match?.[1];
+  if (!envVar) {
     return Effect.succeed(value);
   }
-  const envVar = match[1]!;
   return requireEnvVar(envVar);
 };
 
@@ -26,8 +85,7 @@ const resolveProviderSecrets = (providers: ReadonlyArray<ProviderConfig>) =>
   Effect.forEach(
     providers,
     (provider) =>
-      pipe(
-        substituteEnv(provider.apiKey),
+      substituteEnv(provider.apiKey).pipe(
         Effect.map((apiKey) => ({
           ...provider,
           apiKey,
@@ -36,42 +94,27 @@ const resolveProviderSecrets = (providers: ReadonlyArray<ProviderConfig>) =>
     { concurrency: "unbounded" },
   );
 
-const mergeProfiles = (
-  base: Record<PersonaKey, (typeof defaultProfiles)[PersonaKey]>,
-  overrides: Partial<Record<PersonaKey, (typeof defaultProfiles)[PersonaKey]>> | undefined,
-) => {
-  if (!overrides) {
-    return base;
-  }
-  const entries = Object.entries(base).map(([key, value]) => {
-    const maybeOverride = overrides[key as PersonaKey];
-    return [key, maybeOverride ? { ...value, ...maybeOverride } : value];
-  });
-  return Object.fromEntries(entries) as typeof base;
-};
+export const mergeProfiles = (overrides?: Partial<Record<PersonaKey, Partial<ProfileConfig>>>): Record<PersonaKey, ProfileConfig> =>
+  Object.fromEntries(personaKeys.map((key) => [key, { ...defaultProfiles[key], ...(overrides?.[key] ?? {}) }])) as Record<
+    PersonaKey,
+    ProfileConfig
+  >;
 
-const parseConfig = (raw: string): Partial<AppConfig> | undefined => {
-  const parsed = Bun.YAML.parse(raw) as Partial<AppConfig> | undefined;
-  return parsed ?? undefined;
-};
-
-const readConfigFile = (path: string) =>
+const readConfigFile = (path: string): Effect.Effect<Option.Option<string>, ConfigError, FileSystem.FileSystem> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const exists = yield* fs.exists(path);
-    if (!exists) {
+    if (!(yield* fs.exists(path))) {
       return Option.none<string>();
     }
-    const content = yield* fs.readFileString(path);
-    return Option.some(content);
-  });
+    return Option.some(yield* fs.readFileString(path));
+  }).pipe(Effect.mapError((error) => new ConfigError({ message: `Failed to read ${path}: ${error.message}` })));
 
 const determineBaseDir = () => {
-  const xdgHome = Bun.env.XDG_CONFIG_HOME ?? process.env.XDG_CONFIG_HOME;
+  const xdgHome = Bun.env.XDG_CONFIG_HOME;
   if (xdgHome && xdgHome.length > 0) {
     return xdgHome;
   }
-  const homeDir = Bun.env.HOME ?? process.env.HOME;
+  const homeDir = Bun.env.HOME;
   if (homeDir && homeDir.length > 0) {
     return `${homeDir}/.config`;
   }
@@ -80,49 +123,7 @@ const determineBaseDir = () => {
 
 export const resolveDefaultConfigPath = () => `${determineBaseDir()}/tsl/config.yaml`;
 
-export const loadConfig = (pathOverride?: string) =>
-  Effect.gen(function* () {
-    const targetPath = pathOverride ?? resolveDefaultConfigPath();
-
-    const content = yield* readConfigFile(targetPath);
-
-    const partial = pipe(content, Option.map(parseConfig), Option.getOrUndefined);
-
-    const providers = yield* ensureProviders(partial?.providers);
-    const translation = partial?.translation ? { ...defaultTranslationSection, ...partial.translation } : defaultTranslationSection;
-    const profiles = mergeProfiles(defaultProfiles, partial?.profiles);
-    const preferredPersona = partial?.preferredPersona ?? fallbackPersonaKey;
-
-    const resolvedProviders = yield* resolveProviderSecrets(providers);
-
-    if (resolvedProviders.length === 0) {
-      throw new Error("No providers available after resolving config");
-    }
-
-    return {
-      providers: resolvedProviders,
-      translation,
-      profiles,
-      preferredPersona,
-    };
-  });
-
-export const selectProviderOrFail = (config: AppConfig, preferred?: ProviderName): ProviderConfig => {
-  if (preferred) {
-    const provider = config.providers.find((entry) => entry.name === preferred);
-    if (!provider) {
-      throw new Error(`Provider ${preferred} not found in config`);
-    }
-    return provider;
-  }
-  const [first] = config.providers;
-  if (!first) {
-    throw new Error("No providers defined");
-  }
-  return first;
-};
-
-const ensureProviders = (providers: ReadonlyArray<ProviderConfig> | undefined) =>
+const ensureProviders = (providers: ReadonlyArray<ProviderConfig> | undefined): Effect.Effect<ReadonlyArray<ProviderConfig>, ConfigError> =>
   Effect.gen(function* () {
     if (providers && providers.length > 0) {
       return providers;
@@ -137,9 +138,23 @@ const ensureProviders = (providers: ReadonlyArray<ProviderConfig> | undefined) =
     ] satisfies ReadonlyArray<ProviderConfig>;
   });
 
-const defaultTranslationSection: AppConfig["translation"] = {
-  source: "ko",
-  target: "en",
-  autoCopyToClipboard: true,
-  formatter: DEFAULT_TRANSLATION_FORMATTER,
-};
+export const loadConfig = (pathOverride?: string): Effect.Effect<AppConfig, ConfigError, FileSystem.FileSystem> =>
+  Effect.gen(function* () {
+    const targetPath = pathOverride ?? resolveDefaultConfigPath();
+    const content = yield* readConfigFile(targetPath);
+
+    const document = yield* Option.match(content, {
+      onNone: () => Effect.succeed<ConfigDocument>({}),
+      onSome: parseConfigDocument,
+    });
+
+    const providers = yield* ensureProviders(document.providers);
+    const resolvedProviders = yield* resolveProviderSecrets(providers);
+
+    return {
+      providers: resolvedProviders,
+      translation: { ...defaultTranslationSection, ...(document.translation ?? {}) },
+      profiles: mergeProfiles(document.profiles),
+      preferredPersona: document.preferredPersona ?? fallbackPersonaKey,
+    } satisfies AppConfig;
+  });

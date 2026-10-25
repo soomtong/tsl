@@ -1,13 +1,9 @@
-import { chmod } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 const decoder = new TextDecoder();
-const scriptDir = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(scriptDir, "..", "..");
-const distDir = join(repoRoot, "dist");
-const binaryPath = join(distDir, "tsl");
-const tarPath = join(distDir, "tsl-macos.tar.gz");
+const scriptDir = import.meta.dir;
+const repoRoot = `${scriptDir}/../..`;
+const distDir = `${repoRoot}/dist`;
+const binaryPath = `${distDir}/tsl`;
+const tarPath = `${distDir}/tsl-macos.tar.gz`;
 
 function runCommand(cmd: string[], label: string) {
   console.log(`\n▶ ${label}`);
@@ -25,13 +21,9 @@ function runCommand(cmd: string[], label: string) {
   }
 }
 
-async function ensureExecutable() {
-  await chmod(binaryPath, 0o755);
-}
-
 async function main() {
   runCommand(["bun", "run", "build:bytecode:macos"], "Build macOS binary");
-  await ensureExecutable();
+  runCommand(["chmod", "755", binaryPath], "Ensure executable permissions");
   runCommand([binaryPath, "--help"], "Smoke test tsl --help");
   runCommand(["bun", "run", "distribute:brew"], "Generate tarball + formula");
   runCommand(["tar", "-tzf", tarPath], "Inspect tarball contents");
@@ -41,6 +33,5 @@ async function main() {
 
 main().catch((error) => {
   console.error(error);
-  process.exit(1);
+  process.exitCode = 1;
 });
-

@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import { TranslationError } from "./errors";
 import type { PersonaPreset } from "./persona";
 
 export type TranslationRequest = {
@@ -13,21 +14,23 @@ export type TranslationRequestParams = {
   readonly targetLanguage: string;
 };
 
-export const makeTranslationRequest = ({ sourceText, persona, targetLanguage }: TranslationRequestParams) =>
-  Effect.try({
-    try: (): TranslationRequest => {
-      const trimmed = sourceText.trim();
-      if (trimmed.length === 0) {
-        throw new Error("Prompt cannot be empty");
-      }
-      if (targetLanguage.trim().length === 0) {
-        throw new Error("Target language cannot be empty");
-      }
-      return {
-        sourceText: trimmed,
-        persona,
-        targetLanguage: targetLanguage.trim(),
-      };
-    },
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+export const makeTranslationRequest = ({
+  sourceText,
+  persona,
+  targetLanguage,
+}: TranslationRequestParams): Effect.Effect<TranslationRequest, TranslationError> =>
+  Effect.gen(function* () {
+    const trimmed = sourceText.trim();
+    if (trimmed.length === 0) {
+      return yield* new TranslationError({ message: "Prompt cannot be empty" });
+    }
+    const trimmedTarget = targetLanguage.trim();
+    if (trimmedTarget.length === 0) {
+      return yield* new TranslationError({ message: "Target language cannot be empty" });
+    }
+    return {
+      sourceText: trimmed,
+      persona,
+      targetLanguage: trimmedTarget,
+    } satisfies TranslationRequest;
   });

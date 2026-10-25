@@ -1,6 +1,9 @@
 import * as Effect from "effect/Effect";
+import { ConfigError } from "./errors";
 
-export type PersonaKey = "default" | "programming" | "research" | "review";
+export const personaKeys = ["default", "programming", "research", "review"] as const;
+
+export type PersonaKey = (typeof personaKeys)[number];
 
 export type PersonaPreset = {
   readonly key: PersonaKey;
@@ -31,19 +34,14 @@ export const PERSONA_PRESETS: Record<PersonaKey, PersonaPreset> = {
   },
 };
 
-export const personaKeys: ReadonlyArray<PersonaKey> = Object.keys(PERSONA_PRESETS) as ReadonlyArray<PersonaKey>;
-
-export const requirePersona = (key: PersonaKey | string | undefined) =>
-  Effect.try({
-    try: (): PersonaPreset => {
-      const resolved = (typeof key === "string" ? key : "default") as PersonaKey;
-      const preset = PERSONA_PRESETS[resolved];
-      if (!preset) {
-        throw new Error(`Unknown persona: ${key ?? ""}`);
-      }
-      return preset;
-    },
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
-  });
-
 export const fallbackPersonaKey: PersonaKey = "programming";
+
+export const requirePersona = (key: PersonaKey | string | undefined): Effect.Effect<PersonaPreset, ConfigError> =>
+  Effect.gen(function* () {
+    const resolved = (typeof key === "string" ? key : fallbackPersonaKey) as PersonaKey;
+    const preset = PERSONA_PRESETS[resolved];
+    if (!preset) {
+      return yield* new ConfigError({ message: `Unknown persona: ${key ?? ""}` });
+    }
+    return preset;
+  });

@@ -1,4 +1,6 @@
 import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import { ProviderError } from "./errors";
 import type { PersonaKey } from "./persona";
 
 export type ProviderName = "openai" | "google" | "openrouter";
@@ -30,23 +32,24 @@ export type AppConfig = {
   readonly preferredPersona: PersonaKey;
 };
 
-export class AppConfigService extends Context.Tag("tsl/AppConfig")<AppConfigService, AppConfig>() {}
+export class AppConfigService extends Context.Service<AppConfigService, AppConfig>()("tsl/AppConfig") {}
 
-export const getProvider = (config: AppConfig, preferred?: ProviderName): ProviderConfig => {
-  if (preferred) {
-    const provider = config.providers.find((entry) => entry.name === preferred);
-    if (!provider) {
-      throw new Error(`Provider ${preferred} not configured`);
+export const getProvider = (config: AppConfig, preferred?: ProviderName): Effect.Effect<ProviderConfig, ProviderError> =>
+  Effect.gen(function* () {
+    if (preferred) {
+      const provider = config.providers.find((entry) => entry.name === preferred);
+      if (!provider) {
+        return yield* new ProviderError({ message: `Provider ${preferred} not configured` });
+      }
+      return provider;
     }
-    return provider;
-  }
 
-  const [first] = config.providers;
-  if (!first) {
-    throw new Error("No providers configured");
-  }
-  return first;
-};
+    const [first] = config.providers;
+    if (!first) {
+      return yield* new ProviderError({ message: "No providers configured" });
+    }
+    return first;
+  });
 
 export const DEFAULT_TRANSLATION_FORMATTER =
   "Please convert the Korean prompt into concise English that coding agents understand. Keep imperative mood.";
@@ -70,6 +73,13 @@ export const defaultProfiles: Record<PersonaKey, ProfileConfig> = {
   },
 };
 
+export const defaultTranslationSection: TranslationSection = {
+  source: "ko",
+  target: "en",
+  autoCopyToClipboard: true,
+  formatter: DEFAULT_TRANSLATION_FORMATTER,
+};
+
 export const buildDefaultConfig = (apiKey: string): AppConfig => ({
   providers: [
     {
@@ -78,12 +88,7 @@ export const buildDefaultConfig = (apiKey: string): AppConfig => ({
       model: "gpt-4o-mini",
     },
   ],
-  translation: {
-    source: "Korean",
-    target: "English",
-    autoCopyToClipboard: true,
-    formatter: DEFAULT_TRANSLATION_FORMATTER,
-  },
+  translation: defaultTranslationSection,
   profiles: defaultProfiles,
   preferredPersona: "programming",
 });

@@ -1,17 +1,12 @@
-import { createHash } from "node:crypto";
-import { mkdir, rm } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 const decoder = new TextDecoder();
-const scriptDir = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(scriptDir, "..", "..");
-const distDir = join(repoRoot, "dist");
-const binaryPath = join(distDir, "tsl");
+const scriptDir = import.meta.dir;
+const repoRoot = `${scriptDir}/../..`;
+const distDir = `${repoRoot}/dist`;
+const binaryPath = `${distDir}/tsl`;
 const tarName = "tsl-macos.tar.gz";
-const tarPath = join(distDir, tarName);
-const formulaDir = join(distDir, "homebrew");
-const formulaPath = join(formulaDir, "tsl.rb");
+const tarPath = `${distDir}/${tarName}`;
+const formulaDir = `${distDir}/homebrew`;
+const formulaPath = `${formulaDir}/tsl.rb`;
 
 const sanitizedEnv = { ...Bun.env };
 delete sanitizedEnv.OPENAI_API_KEY;
@@ -38,7 +33,7 @@ async function ensureBinary() {
 }
 
 async function createTarball() {
-  await rm(tarPath, { force: true });
+  runCommand(["rm", "-f", tarPath], "remove stale tarball");
   console.log(`Packaging ${binaryPath} into ${tarName}...`);
   runCommand(["tar", "-czf", tarPath, "-C", distDir, "tsl"], "tar macOS artifact");
 }
@@ -59,28 +54,17 @@ function deriveRepoSlug() {
 }
 
 async function readPackageVersion() {
-  const packageJson = JSON.parse(await Bun.file(join(repoRoot, "package.json")).text());
+  const packageJson = (await Bun.file(`${repoRoot}/package.json`).json()) as { version?: string };
   return packageJson.version ?? "0.0.0";
 }
 
 async function computeSha256() {
-  const bytes = new Uint8Array(await Bun.file(tarPath).arrayBuffer());
-  const hash = createHash("sha256");
-  hash.update(bytes);
-  return hash.digest("hex");
+  const hasher = new Bun.CryptoHasher("sha256");
+  hasher.update(await Bun.file(tarPath).arrayBuffer());
+  return hasher.digest("hex");
 }
 
-function buildFormula({
-  version,
-  sha256,
-  url,
-  homepage,
-}: {
-  version: string;
-  sha256: string;
-  url: string;
-  homepage: string;
-}) {
+function buildFormula({ version, sha256, url, homepage }: { version: string; sha256: string; url: string; homepage: string }) {
   return `# Generated via \`bun run distribute:brew\`
 class Tsl < Formula
   desc "Translate CLI powered by Effect/AI"
@@ -102,19 +86,18 @@ end
 }
 
 async function main() {
-  await mkdir(distDir, { recursive: true });
+  runCommand(["mkdir", "-p", distDir], "create dist directory");
   await ensureBinary();
   await createTarball();
 
   const version = await readPackageVersion();
   const slug = deriveRepoSlug();
   const tag = Bun.env.HOMEBREW_RELEASE_TAG ?? `v${version}`;
-  const downloadUrl =
-    Bun.env.HOMEBREW_TARBALL_URL ?? `https://github.com/${slug}/releases/download/${tag}/${tarName}`;
+  const downloadUrl = Bun.env.HOMEBREW_TARBALL_URL ?? `https://github.com/${slug}/releases/download/${tag}/${tarName}`;
   const homepage = `https://github.com/${slug}`;
   const sha256 = await computeSha256();
 
-  await mkdir(formulaDir, { recursive: true });
+  runCommand(["mkdir", "-p", formulaDir], "create formula directory");
   const formula = buildFormula({ version, sha256, url: downloadUrl, homepage });
   await Bun.write(formulaPath, formula);
 
@@ -127,6 +110,5 @@ async function main() {
 
 main().catch((error) => {
   console.error(error);
-  process.exit(1);
+  process.exitCode = 1;
 });
-

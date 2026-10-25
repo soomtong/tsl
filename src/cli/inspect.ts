@@ -1,5 +1,6 @@
-import * as FileSystem from "@effect/platform/FileSystem";
-import { Effect } from "effect";
+import * as Console from "effect/Console";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import { loadConfig } from "../infrastructure/config/configLoader";
 
 export const showLoadedConfig = (path: string) =>
@@ -7,17 +8,10 @@ export const showLoadedConfig = (path: string) =>
     const fs = yield* FileSystem.FileSystem;
     const exists = yield* fs.exists(path);
     if (!exists) {
-      console.log(`⛔️ No saved config found at ${path}. Run --init first.`);
+      yield* Console.log(`⛔️ No saved config found at ${path}. Run --init first.`);
       return;
     }
     const config = yield* loadConfig(path);
-    console.log(`--- resolved config (${path}) ---`);
-    console.log(Bun.YAML.stringify(config, null, 2));
-  }).pipe(
-    Effect.catchAll((error) =>
-      Effect.sync(() => {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`⛔️ Failed to load config: ${message}`);
-      }),
-    ),
-  );
+    yield* Console.log(`--- resolved config (${path}) ---`);
+    yield* Console.log(Bun.YAML.stringify(config, null, 2));
+  }).pipe(Effect.catch((error) => Console.error(`⛔️ Failed to load config: ${error.message}`)));
