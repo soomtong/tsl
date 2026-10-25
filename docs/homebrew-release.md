@@ -1,7 +1,7 @@
 # Homebrew Release Playbook
 
 ## 1. 준비 작업
-- `tsl` 저장소에서 버전을 갱신하고 태그할 커밋을 만든다 (`package.json` `version`: `0.1.0`).
+- `tsl` 저장소에서 `package.json`의 `version`을 갱신하고 태그할 커밋을 만든다 (예: `0.4.0`).
 - 별도의 Tap 저장소를 만든다 (예: `soomtong/homebrew-tap`) 후 `Formula/` 디렉터리를 생성한다.
 
 ## 2. GitHub Secrets
@@ -15,12 +15,12 @@
 | `HOMEBREW_TAP_BRANCH` | 선택. tap 저장소 기본 브랜치가 `main`이 아니면 지정. |
 
 ## 3. 태그 릴리스
-1. `npm version patch` (또는 `npm version minor|major`)로 `package.json`의 버전을 반드시 갱신하고 커밋한다.
-2. `git push origin HEAD && git push origin v0.1.0`.
+1. `package.json`의 `version`을 갱신하고 커밋한다.
+2. `git push origin HEAD && git push origin v0.4.0`.
 3. GitHub Actions가 자동으로 실행되어 다음을 수행한다.
-   - macOS 바이너리를 빌드 (`bun run release`).
+   - macOS 바이너리를 빌드한다 (`bun run release`). 릴리스 스크립트는 Bun API(`Bun.file`, `Bun.write`, `Bun.CryptoHasher`, `Bun.spawnSync`)만 사용한다.
    - `dist/tsl-macos.tar.gz`와 `dist/homebrew/tsl.rb` 생성.
-   - GitHub Release(`v0.1.0`) 생성 또는 업데이트, 산출물 첨부.
+   - GitHub Release(`v0.4.0`) 생성 또는 업데이트, 산출물 첨부.
    - Tap 저장소의 `Formula/tsl.rb`를 최신 버전으로 커밋/푸시.
 
 ## 4. Homebrew에서 설치
