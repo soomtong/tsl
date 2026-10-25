@@ -6,8 +6,10 @@ import packageJson from "../package.json";
 import { executeTranslation } from "./application/translation";
 import { runInitFlow, showConfigFile } from "./cli/config";
 import { runDoctor } from "./cli/doctor";
+import { resolveSourceText } from "./cli/input";
 import { showLoadedConfig } from "./cli/inspect";
 import {
+  clipboardOption,
   configPathOption,
   doctorOption,
   ensureLength,
@@ -18,7 +20,6 @@ import {
   personaOption,
   promptArg,
   promptInfoOption,
-  promptInput,
   showConfigOption,
 } from "./cli/options";
 import { logClipboardStatus, logPersonaAndTarget, logTranslationOutputs, printPromptDetails } from "./cli/output";
@@ -43,9 +44,10 @@ const translationCommand = Command.make(
     showConfig: showConfigOption,
     loadShow: loadShowOption,
     promptInfo: promptInfoOption,
+    clipboard: clipboardOption,
     doctor: doctorOption,
   },
-  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow, promptInfo, doctor }) =>
+  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow, promptInfo, clipboard, doctor }) =>
     Effect.gen(function* () {
       const configPathOverride = Option.getOrUndefined(configPath);
       const defaultConfigPath = resolveDefaultConfigPath();
@@ -100,9 +102,10 @@ const translationCommand = Command.make(
         return;
       }
 
-      const promptTokens = Option.getOrElse(prompt, () => [] as ReadonlyArray<string>);
-      const promptText = promptTokens.join(" ").trim();
-      const finalPrompt = promptText.length > 0 ? promptText : yield* promptInput;
+      const promptTokens = Option.getOrElse(prompt, () => [] as ReadonlyArray<string>).map(String);
+      const finalPrompt = yield* resolveSourceText({ tokens: promptTokens, fromClipboard: clipboard }).pipe(
+        Effect.provide(MacosClipboardLayer),
+      );
 
       const request = yield* makeTranslationRequest({
         sourceText: finalPrompt,

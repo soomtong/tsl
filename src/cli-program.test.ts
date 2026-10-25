@@ -4,6 +4,8 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Layer from "effect/Layer";
+import * as Stdio from "effect/Stdio";
+import * as Stream from "effect/Stream";
 import { TestConsole } from "effect/testing";
 import { runCli } from "./cli-program";
 
@@ -35,7 +37,7 @@ profiles:
 preferredPersona: programming
 ${extra}`;
 
-const run = (args: ReadonlyArray<string>) =>
+const run = (args: ReadonlyArray<string>, stdin?: string) =>
   Effect.gen(function* () {
     const exit = yield* Effect.exit(runCli(args));
     const logs = yield* TestConsole.logLines;
@@ -45,7 +47,16 @@ const run = (args: ReadonlyArray<string>) =>
       output: logs.map(String).join("\n"),
       errors: errors.map(String).join("\n"),
     };
-  }).pipe(Effect.provide(testLayer));
+  }).pipe(
+    Effect.provide(
+      stdin === undefined
+        ? testLayer
+        : Layer.merge(
+            testLayer,
+            Stdio.layerTest({ stdin: Stream.make(new TextEncoder().encode(stdin)), stdinIsTerminal: Effect.succeed(false) }),
+          ),
+    ),
+  );
 
 afterEach(async () => {
   for (const server of servers.splice(0)) {
@@ -208,5 +219,42 @@ describe("runCli", () => {
     expect(captured).toContain("인증 시스템을 구현해주세요");
     expect(output).toContain("translated-1");
     expect(output).toContain("translated-2");
+  });
+
+  test("reads the prompt from piped stdin with shell-special characters intact", async () => {
+    let captured = "";
+    const server = Bun.serve({
+      port: 0,
+      async fetch(request) {
+        const body = (await request.json()) as { messages?: Array<{ content?: unknown }>; model: string };
+        captured = (body.messages ?? []).map((message) => String(message.content)).join("\n");
+        return Response.json({
+          id: "chatcmpl-stdin",
+          object: "chat.completion",
+          created: Math.floor(Date.now() / 1000),
+          model: body.model,
+          choices: [{ index: 0, message: { role: "assistant", content: "translated-stdin" }, finish_reason: "stop" }],
+          usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+        });
+      },
+    });
+    servers.push(server);
+    const path = await writeConfig(
+      baseConfig(`  - name: google\n    apiKey: sk-test\n    model: gemini-2.5-flash\n    apiUrl: http://127.0.0.1:${server.port}/v1`),
+    );
+    const sentence = "이거 뭐야? 와, 대단하다! 첫째; 둘째: 셋째 & (넷째)";
+
+    const { exit, output } = await Effect.runPromise(run(["--config-path", path], `${sentence}\n`));
+
+    expect(Exit.isSuccess(exit)).toBe(true);
+    expect(captured).toContain(sentence);
+    expect(output).toContain("translated-stdin");
+  });
+
+  test("fails when piped stdin is empty", async () => {
+    const path = await writeConfig(baseConfig("  - name: openai\n    apiKey: sk-test\n    model: gpt-4o-mini"));
+    const { exit } = await Effect.runPromise(run(["--config-path", path], "  \n"));
+
+    expect(Exit.isFailure(exit)).toBe(true);
   });
 });

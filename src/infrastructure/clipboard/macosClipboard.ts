@@ -21,6 +21,21 @@ const copyToClipboard = (text: string) =>
     }
   });
 
+const pasteFromClipboard = Effect.gen(function* () {
+  const result = yield* Effect.try({
+    try: () => Bun.spawnSync(["/usr/bin/pbpaste"], { stdout: "pipe", stderr: "pipe" }),
+    catch: (error) => new ClipboardError({ message: error instanceof Error ? error.message : String(error) }),
+  });
+
+  if (result.exitCode !== 0) {
+    const stderr = result.stderr ? new TextDecoder().decode(result.stderr).trim() : "";
+    return yield* new ClipboardError({ message: `pbpaste failed: ${stderr || "unknown error"}` });
+  }
+
+  return new TextDecoder().decode(result.stdout);
+});
+
 export const MacosClipboardLayer = Layer.succeed(Clipboard, {
   copy: copyToClipboard,
+  paste: pasteFromClipboard,
 });

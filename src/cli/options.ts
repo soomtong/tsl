@@ -49,6 +49,12 @@ export const promptInfoOption = Flag.Boolean("prompt").pipe(
   Flag.withDescription("Print the current system prompt and persona settings"),
 );
 
+export const clipboardOption = Flag.Boolean("clipboard").pipe(
+  Flag.withAlias("c"),
+  Flag.withDefault(false),
+  Flag.withDescription("Read the text to translate from the clipboard (avoids shell quoting)"),
+);
+
 export const doctorOption = Flag.Boolean("doctor").pipe(
   Flag.withDefault(false),
   Flag.withDescription("Check config, provider connectivity, and clipboard availability"),

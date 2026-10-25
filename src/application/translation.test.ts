@@ -56,6 +56,7 @@ const clipboardLayer = (copied: Array<string>) =>
       Effect.sync(() => {
         copied.push(text);
       }),
+    paste: Effect.succeed(""),
   });
 
 const provide = <A, E>(
