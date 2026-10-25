@@ -69,7 +69,7 @@ const translationCommand = Command.make(
       const configData = yield* loadConfig(configPathOverride);
 
       if (doctor) {
-        yield* runDoctor(configData);
+        yield* runDoctor(configData, resolvedConfigPath);
         return;
       }
 

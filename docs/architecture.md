@@ -51,7 +51,7 @@ OpenAI는 `max_output_tokens`, OpenAI 호환 Provider는 `max_tokens`를 사용�
 
 ## 설정 해석
 
-0. 경로: `--config-path` > `$XDG_CONFIG_HOME/tsl/config.yaml` > `$HOME/.config/tsl/config.yaml`. YAML만 읽는다.
+0. 경로: `--config-path` > `$XDG_CONFIG_HOME/tsl/config.yaml` > `$HOME/.config/tsl/config.yaml`. YAML만 읽으며, 같은 디렉터리의 `config.json`/`config.yml`은 무시하고 `--doctor`에서 안내한다.
 1. `Bun.YAML.parse`로 YAML을 읽고 `Schema`로 부분 문서를 검증한다.
 2. `profiles`는 `defaultProfiles`에 덮어쓴다.
 3. `apiKey`의 `${ENV:NAME}`은 `Bun.env`에서 해석한다.

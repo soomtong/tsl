@@ -1,6 +1,8 @@
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import { HttpClient, HttpClientRequest } from "effect/http";
+import * as Path from "effect/Path";
 import type { AppConfig, ProviderConfig } from "../domain/config";
 import { ConfigError } from "../domain/errors";
 
@@ -64,14 +66,21 @@ const checkClipboard = (): DoctorCheck => {
 const renderChecks = (checks: ReadonlyArray<DoctorCheck>) =>
   Effect.forEach(checks, (check) => Console.log(`${check.ok ? "✅" : "⛔️"} ${check.name} — ${check.detail}`));
 
-export const runDoctor = (config: AppConfig): Effect.Effect<void, ConfigError, HttpClient.HttpClient> =>
+const IGNORED_CONFIG_NAMES = ["config.json", "config.yml"] as const;
+
+export const runDoctor = (
+  config: AppConfig,
+  configPath: string,
+): Effect.Effect<void, ConfigError, HttpClient.HttpClient | FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const providerChecks = yield* Effect.forEach(config.providers, checkProvider, { concurrency: "unbounded" });
     const checks: ReadonlyArray<DoctorCheck> = [
       {
         name: "config",
         ok: config.providers.length > 0,
-        detail: `${config.providers.length} provider(s), persona ${config.preferredPersona}`,
+        detail: `${config.providers.length} provider(s), persona ${config.preferredPersona} — ${configPath}`,
       },
       ...providerChecks,
       checkClipboard(),
@@ -79,6 +88,16 @@ export const runDoctor = (config: AppConfig): Effect.Effect<void, ConfigError, H
 
     yield* Console.log("Health checks");
     yield* renderChecks(checks);
+
+    for (const name of IGNORED_CONFIG_NAMES) {
+      const candidate = path.join(path.dirname(configPath), name);
+      const exists = yield* fs
+        .exists(candidate)
+        .pipe(Effect.mapError((error) => new ConfigError({ message: `Failed to inspect ${candidate}: ${error.message}` })));
+      if (exists) {
+        yield* Console.log(`ℹ️ ignored config: ${candidate} (only config.yaml is loaded)`);
+      }
+    }
 
     const failures = checks.filter((check) => !check.ok).length;
     if (failures > 0) {

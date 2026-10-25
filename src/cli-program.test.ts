@@ -7,15 +7,16 @@ import * as Layer from "effect/Layer";
 import { TestConsole } from "effect/testing";
 import { runCli } from "./cli-program";
 
-const tmpFiles: Array<string> = [];
+const tmpDirs: Array<string> = [];
 const servers: Array<{ stop: (force?: boolean) => void }> = [];
 
 const testLayer = Layer.mergeAll(BunServices.layer, FetchHttpClient.layer, TestConsole.layer);
 
 const writeConfig = async (contents: string) => {
-  const path = `${Bun.env.TMPDIR ?? "/tmp"}/tsl-cli-${crypto.randomUUID()}.yaml`;
+  const dir = `${Bun.env.TMPDIR ?? "/tmp"}/tsl-cli-${crypto.randomUUID()}`;
+  const path = `${dir}/config.yaml`;
   await Bun.write(path, contents);
-  tmpFiles.push(path);
+  tmpDirs.push(dir);
   return path;
 };
 
@@ -50,10 +51,8 @@ afterEach(async () => {
   for (const server of servers.splice(0)) {
     server.stop(true);
   }
-  for (const path of tmpFiles.splice(0)) {
-    if (await Bun.file(path).exists()) {
-      await Bun.file(path).delete();
-    }
+  for (const dir of tmpDirs.splice(0)) {
+    Bun.spawnSync(["rm", "-rf", dir]);
   }
 });
 
@@ -97,11 +96,15 @@ describe("runCli", () => {
     const path = await writeConfig(
       baseConfig(`  - name: google\n    apiKey: sk-secret\n    model: gemini-2.5-flash\n    apiUrl: http://127.0.0.1:${server.port}/v1`),
     );
+    const ignoredPath = `${path.replace(/\/config\.yaml$/, "")}/config.json`;
+    await Bun.write(ignoredPath, "{}");
 
     const { exit, output } = await Effect.runPromise(run(["--doctor", "--config-path", path]));
 
     expect(Exit.isSuccess(exit)).toBe(true);
-    expect(output).toContain("config — 1 provider(s), persona programming");
+    expect(output).toContain(`config — 1 provider(s), persona programming — ${path}`);
+    expect(output).toContain("ignored config:");
+    expect(output).toContain("config.json (only config.yaml is loaded)");
     expect(output).toContain("provider:google — HTTP 200 (gemini-2.5-flash)");
     expect(output).toContain("clipboard —");
     expect(output).not.toContain("sk-secret");
