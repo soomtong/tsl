@@ -35,6 +35,12 @@ brew install tsl
 - Release 생성은 `GITHUB_TOKEN`(`contents: write`)을 사용한다. 더 이상 `GH_PAT`를 사용하지 않으므로 기존 `GH_PAT` 시크릿은 삭제해도 된다.
 - `Create GitHub release` 단계에서 `401 Bad credentials`가 발생하면 만료된 `GH_PAT`가 남아 있는지 확인하고 삭제한다.
 - 동일 태그에서 워크플로를 재실행하면 Release 업로드는 `gh release upload --clobber`로 갱신된다.
+- `Failed to download resource`/`404` 또는 checksum mismatch가 발생하면 오래된 tap 체크아웃이 원인일 수 있다. `brew update` 후 `brew upgrade tsl`을 실행한다.
+  ```bash
+  brew update
+  brew fetch soomtong/tap/tsl --force
+  brew upgrade tsl
+  ```
 - Tap 업데이트 단계는 diff가 없을 경우 “Tap already up to date.” 메시지와 함께 성공적으로 종료된다.
 - 필요 시 `HOMEBREW_TAP_REPO` 또는 토큰 환경을 변경해 다른 Tap으로 전환할 수 있다.
 
