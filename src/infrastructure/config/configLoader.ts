@@ -5,6 +5,7 @@ import * as Schema from "effect/Schema";
 import type { AppConfig, ProfileConfig, ProviderConfig, TranslationSection } from "../../domain/config";
 import { defaultProfiles, defaultTranslationSection } from "../../domain/config";
 import { ConfigError } from "../../domain/errors";
+import { DEFAULT_MODELS } from "../../domain/models";
 import type { PersonaKey } from "../../domain/persona";
 import { fallbackPersonaKey, personaKeys } from "../../domain/persona";
 
@@ -133,7 +134,7 @@ const ensureProviders = (providers: ReadonlyArray<ProviderConfig> | undefined): 
       {
         name: "openai",
         apiKey: openAiKey,
-        model: "gpt-4o-mini",
+        model: DEFAULT_MODELS.openai,
       },
     ] satisfies ReadonlyArray<ProviderConfig>;
   });

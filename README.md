@@ -8,7 +8,7 @@
 - Provider 다중 선택 지원(OpenAI, Google Gemini, **OpenRouter 400+ 모델**) 및 모델별 설정
 - `tsl --persona programming` 같은 도메인 프리셋으로 일관된 프롬프트 스타일 제공
 - `--length` 옵션으로 다중 예제(샘플) 생성
-- OpenRouter를 통한 무료 모델(sherlock-dash-alpha 등) 및 다양한 AI 모델 접근
+- OpenRouter를 통한 무료 모델(`openrouter/free` 등) 및 다양한 AI 모델 접근
 - `tsl --doctor`로 설정·Provider 연결·클립보드 상태 점검
 
 ## 시스템 요구 사항
@@ -42,8 +42,10 @@ bun run src/main.ts --init
 
 초기화 시 다음을 선택할 수 있습니다:
 - **Provider**: OpenAI, Google Gemini, OpenRouter
-- **Model** (OpenRouter 선택 시): 15개 인기 모델 중 선택 (무료 모델 포함)
+- **Model** (OpenRouter 선택 시): 2026-10 기준 15개 큐레이션 모델 중 선택 (무료 모델 포함). 목록에 없으면 `config.yaml`에서 모델 ID를 직접 지정
 - **Persona**: default, programming, research, review
+
+기본 모델은 OpenAI `gpt-6-luna`, Google `gemini-3.8-flash`, OpenRouter `openrouter/free`입니다. OpenRouter 전체 모델은 `curl -s https://openrouter.ai/api/v1/models | jq -r '.data[].id'`로 확인할 수 있고, 큐레이션 목록에 없어도 `model`에 임의 ID를 지정할 수 있습니다.
 
 수동 작성 예시는 아래와 같습니다.
 
@@ -52,17 +54,17 @@ bun run src/main.ts --init
 providers:
   - name: openai
     apiKey: sk-...
-    model: gpt-4o-mini
+    model: gpt-6-luna
   - name: google
     apiKey: g-...
-    model: gemini-2.5-flash
+    model: gemini-3.8-flash
   - name: openrouter
     apiKey: sk-or-...  # OpenRouter API key
-    model: openrouter/sherlock-dash-alpha  # Free model
-    # 또는 다른 인기 모델들:
-    # model: anthropic/claude-sonnet-4.5
-    # model: openai/gpt-5-pro
-    # model: google/gemini-2.5-flash-preview-09-2025
+    model: openrouter/free  # Free Models Router
+    # 또는 다른 모델 ID:
+    # model: openai/gpt-6.1-sol
+    # model: anthropic/claude-sonnet-5.5
+    # model: google/gemini-4-argon
 
 translation:
   source: ko

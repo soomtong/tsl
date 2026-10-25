@@ -1,6 +1,7 @@
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import { ProviderError } from "./errors";
+import { DEFAULT_MODELS } from "./models";
 import type { PersonaKey } from "./persona";
 
 export type ProviderName = "openai" | "google" | "openrouter";
@@ -85,7 +86,7 @@ export const buildDefaultConfig = (apiKey: string): AppConfig => ({
     {
       name: "openai",
       apiKey,
-      model: "gpt-4o-mini",
+      model: DEFAULT_MODELS.openai,
     },
   ],
   translation: defaultTranslationSection,

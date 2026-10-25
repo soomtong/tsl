@@ -6,6 +6,7 @@ import * as Path from "effect/Path";
 import * as Redacted from "effect/Redacted";
 import type { AppConfig, ProviderName } from "../domain/config";
 import { DEFAULT_TRANSLATION_FORMATTER, defaultProfiles } from "../domain/config";
+import { DEFAULT_MODELS } from "../domain/models";
 import type { PersonaKey } from "../domain/persona";
 
 const providerPrompt = Prompt.Select<ProviderName>({
@@ -28,23 +29,27 @@ const apiKeyPrompt = Prompt.Password({
 const openrouterModelPrompt = Prompt.Select<string>({
   message: "Select OpenRouter model",
   choices: [
-    // Free models
-    { title: "sherlock-dash-alpha (FREE)", value: "openrouter/sherlock-dash-alpha", description: "Fast, free model" },
-    { title: "sherlock-think-alpha (FREE)", value: "openrouter/sherlock-think-alpha", description: "Reasoning model, free" },
-    // Popular paid models
-    { title: "Claude Sonnet 4.5", value: "anthropic/claude-sonnet-4.5", description: "High performance model" },
-    { title: "GPT-5 Pro", value: "openai/gpt-5-pro", description: "Latest OpenAI flagship" },
-    { title: "GPT-5.1", value: "openai/gpt-5.1", description: "Advanced GPT-5 variant" },
-    { title: "Gemini 2.5 Flash", value: "google/gemini-2.5-flash-preview-09-2025", description: "Fast Google model" },
-    { title: "DeepSeek V3.1 Terminus", value: "deepseek/deepseek-v3.1-terminus", description: "DeepSeek flagship" },
-    { title: "Qwen3 Next 80B", value: "qwen/qwen3-next-80b-a3b-instruct", description: "Alibaba's large model" },
-    { title: "Claude Haiku 4.5", value: "anthropic/claude-haiku-4.5", description: "Fast, affordable Claude" },
-    { title: "Kimi K2 Thinking", value: "moonshotai/kimi-k2-thinking", description: "Moonshot reasoning model" },
-    { title: "Grok 4 Fast", value: "x-ai/grok-4-fast", description: "X.AI fast model" },
-    { title: "Qwen3 Max", value: "qwen/qwen3-max", description: "Alibaba's max model" },
-    { title: "GPT-5 Codex", value: "openai/gpt-5-codex", description: "Code-specialized GPT-5" },
-    { title: "Nova Premier V1", value: "amazon/nova-premier-v1", description: "Amazon's premier model" },
-    { title: "GLM 4.6", value: "z-ai/glm-4.6", description: "Zhipu AI model" },
+    // Free models (verified against https://openrouter.ai/api/v1/models)
+    { title: "Free Models Router (FREE)", value: DEFAULT_MODELS.openrouter, description: "Auto-selects a free model; 200k context" },
+    { title: "Flint 1.0 (FREE)", value: "recursive/flint-v1.0:free", description: "Newest free model; 262k context" },
+    {
+      title: "Nemotron 3.5 Super VL (FREE)",
+      value: "nvidia/nemotron-3.5-super-vl:free",
+      description: "Free multimodal model; 1M context",
+    },
+    { title: "Inkling (FREE)", value: "thinkingmachines/inkling:free", description: "Free reasoning model; 1M context" },
+    // Current flagship / value models
+    { title: "GPT-6.1 Sol", value: "openai/gpt-6.1-sol", description: "OpenAI flagship; 1M context" },
+    { title: "GPT-6 Luna", value: "openai/gpt-6-luna", description: "Fast, low-cost OpenAI; 1M context" },
+    { title: "Claude Sonnet 5.5", value: "anthropic/claude-sonnet-5.5", description: "Balanced Anthropic flagship" },
+    { title: "Claude Haiku 5.5", value: "anthropic/claude-haiku-5.5", description: "Fast, affordable Claude" },
+    { title: "Gemini 4 Argon", value: "google/gemini-4-argon", description: "Google flagship reasoning" },
+    { title: "Gemini 3.8 Flash", value: "google/gemini-3.8-flash", description: "Fast Google model" },
+    { title: "DeepSeek V4.1 Flash", value: "deepseek/deepseek-v4.1-flash", description: "Low-cost, high throughput" },
+    { title: "Qwen3.8 Max Prime", value: "qwen/qwen3.8-max-prime", description: "Alibaba flagship" },
+    { title: "Kimi K3.1 Pro", value: "moonshotai/kimi-k3.1-pro", description: "Moonshot flagship; 1M context" },
+    { title: "GLM 5.3 Prime", value: "z-ai/glm-5.3-prime", description: "Z.ai flagship" },
+    { title: "Grok 4.7", value: "x-ai/grok-4.7", description: "xAI flagship; 500k context" },
   ],
 });
 
@@ -90,8 +95,7 @@ const buildConfigFromPrompts = ({
   readonly preferredPersona: PersonaKey;
   readonly model?: string;
 }): AppConfig => {
-  const defaultModel =
-    provider === "openai" ? "gpt-4o-mini" : provider === "google" ? "gemini-2.5-flash" : "openrouter/sherlock-dash-alpha";
+  const defaultModel = DEFAULT_MODELS[provider];
 
   return {
     providers: [

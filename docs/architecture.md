@@ -44,6 +44,8 @@ Boolean 플래그는 v4에서 기본값이 없으므로 `Flag.withDefault(false)
 | OpenRouter | `@effect/ai-openrouter` | Chat Completions | `https://openrouter.ai/api/v1` |
 | Google Gemini | `@effect/ai-openai-compat` | Chat Completions | `https://generativelanguage.googleapis.com/v1beta/openai` |
 
+기본 모델은 `src/domain/models.ts`에 단일 정의한다(OpenAI `gpt-6-luna`, Google `gemini-3.8-flash`, OpenRouter `openrouter/free`).
+
 모든 Provider는 `LanguageModel.LanguageModel` 레이어를 제공하며, 요청별 `temperature`/`maxTokens`는 각 패키지의 `withConfigOverride`로 적용한다.
 OpenAI는 `max_output_tokens`, OpenAI 호환 Provider는 `max_tokens`를 사용한다.
 
