@@ -42,10 +42,11 @@ bun run src/main.ts --init
 
 초기화 시 다음을 선택할 수 있습니다:
 - **Provider**: OpenAI, Google Gemini, OpenRouter
-- **Model** (OpenRouter 선택 시): 2026-10 기준 15개 큐레이션 모델 중 선택 (무료 모델 포함). 목록에 없으면 `config.yaml`에서 모델 ID를 직접 지정
+- **API key** (OpenRouter 선택 시): 기본값은 환경 변수 참조 `${ENV:OPENROUTER_API_KEY}`이며, 키를 직접 입력할 수도 있음
+- **Model** (OpenRouter 선택 시): 2026-10 기준 13개 큐레이션 모델 (번역 특화 `tencent/hy-mt2-*`, 저가 유료 모델 위주로 고가 플래그십 모델은 제외) 중 선택. 무료 모델은 응답이 느릴 수 있어 목록 끝에 둠. 목록에 없으면 `config.yaml`에서 모델 ID를 직접 지정
 - **Persona**: default, programming, research, review
 
-기본 모델은 OpenAI `gpt-6-luna`, Google `gemini-3.8-flash`, OpenRouter `openrouter/free`입니다. OpenRouter 전체 모델은 `curl -s https://openrouter.ai/api/v1/models | jq -r '.data[].id'`로 확인할 수 있고, 큐레이션 목록에 없어도 `model`에 임의 ID를 지정할 수 있습니다.
+기본 모델은 OpenAI `gpt-6-luna`, Google `gemini-3.8-flash`, OpenRouter `tencent/hy-mt2-1.8b`(번역 특화, 짧은 문장용)입니다. 기본 persona는 `default`입니다. OpenRouter 전체 모델은 `curl -s https://openrouter.ai/api/v1/models | jq -r '.data[].id'`로 확인할 수 있고, 큐레이션 목록에 없어도 `model`에 임의 ID를 지정할 수 있습니다.
 
 수동 작성 예시는 아래와 같습니다.
 
@@ -59,12 +60,13 @@ providers:
     apiKey: g-...
     model: gemini-3.8-flash
   - name: openrouter
-    apiKey: sk-or-...  # OpenRouter API key
-    model: openrouter/free  # Free Models Router
+    apiKey: ${ENV:OPENROUTER_API_KEY}  # 환경 변수 참조 (직접 입력: sk-or-...)
+    model: tencent/hy-mt2-1.8b  # 번역 특화 저가 모델 (기본값)
     # 또는 다른 모델 ID:
-    # model: openai/gpt-6.1-sol
-    # model: anthropic/claude-sonnet-5.5
-    # model: google/gemini-4-argon
+    # model: tencent/hy-mt2-7b
+    # model: qwen/qwen3.7-flash
+    # model: anthropic/claude-haiku-5.5
+    # model: openrouter/free  # Free Models Router
 
 translation:
   source: ko
@@ -82,6 +84,22 @@ profiles:
     temperature: 0.2
     styleHint: |
       Emphasize reproducible steps and include code if needed.
+```
+
+### API 키를 환경 변수로 참조하기
+`apiKey` 값이 `${ENV:VAR}` 형식이면 실행 시점에 해당 환경 변수 값으로 치환됩니다. 변수가 없거나 비어 있으면 `Missing required env var` 오류로 종료합니다. `tsl --init`에서 OpenRouter를 고르면 기본으로 `${ENV:OPENROUTER_API_KEY}`가 기록됩니다.
+
+```bash
+# ~/.zshrc 또는 .env
+export OPENROUTER_API_KEY=sk-or-...
+```
+
+```yaml
+# ~/.config/tsl/config.yaml
+providers:
+  - name: openrouter
+    apiKey: ${ENV:OPENROUTER_API_KEY}
+    model: tencent/hy-mt2-1.8b
 ```
 
 ## 명령어

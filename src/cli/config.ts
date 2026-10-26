@@ -26,11 +26,38 @@ const apiKeyPrompt = Prompt.Password({
   },
 });
 
+// biome-ignore lint/suspicious/noTemplateCurlyInString: literal config reference syntax
+const OPENROUTER_ENV_REFERENCE = "${ENV:OPENROUTER_API_KEY}";
+
+const openrouterKeySourcePrompt = Prompt.Select<"env" | "direct">({
+  message: "OpenRouter API key source",
+  choices: [
+    { title: "env reference", value: "env", description: `Store ${OPENROUTER_ENV_REFERENCE} (key stays in your environment)` },
+    { title: "enter key", value: "direct", description: "Write the key into config.yaml" },
+  ],
+});
+
 const openrouterModelPrompt = Prompt.Select<string>({
   message: "Select OpenRouter model",
   choices: [
-    // Free models (verified against https://openrouter.ai/api/v1/models)
-    { title: "Free Models Router (FREE)", value: DEFAULT_MODELS.openrouter, description: "Auto-selects a free model; 200k context" },
+    // Translation-specialized models (cheap and fast, 8k context)
+    {
+      title: "Hunyuan MT2 1.8B",
+      value: DEFAULT_MODELS.openrouter,
+      description: "Default; translation-specialized, cheapest and fastest; 8k context",
+    },
+    { title: "Hunyuan MT2 7B", value: "tencent/hy-mt2-7b", description: "Translation-specialized; higher quality; 8k context" },
+    { title: "Hunyuan MT2 30B-A3B", value: "tencent/hy-mt2-30b-a3b", description: "Translation-specialized MoE; 8k context" },
+    // Low-cost paid general models (USD per 1M input/output tokens, verified against https://openrouter.ai/api/v1/models)
+    { title: "Qwen3.7 Flash", value: "qwen/qwen3.7-flash", description: "$0.03/$0.13; 1M context" },
+    { title: "Gemma 3 12B", value: "google/gemma-3-12b-it", description: "$0.05/$0.15; 131k context" },
+    { title: "GPT-5 Nano", value: "openai/gpt-5-nano", description: "$0.05/$0.40; 400k context" },
+    // Other low-cost models (flagship models are intentionally excluded)
+    { title: "GPT-6 Luna", value: "openai/gpt-6-luna", description: "Fast, low-cost OpenAI; 1M context" },
+    { title: "Claude Haiku 5.5", value: "anthropic/claude-haiku-5.5", description: "Fast, affordable Claude" },
+    { title: "DeepSeek V4.1 Flash", value: "deepseek/deepseek-v4.1-flash", description: "Low-cost, high throughput" },
+    // Free models (often slow; verified against https://openrouter.ai/api/v1/models)
+    { title: "Free Models Router (FREE)", value: "openrouter/free", description: "Auto-selects a free model; may be slow; 200k context" },
     { title: "Flint 1.0 (FREE)", value: "recursive/flint-v1.0:free", description: "Newest free model; 262k context" },
     {
       title: "Nemotron 3.5 Super VL (FREE)",
@@ -38,18 +65,6 @@ const openrouterModelPrompt = Prompt.Select<string>({
       description: "Free multimodal model; 1M context",
     },
     { title: "Inkling (FREE)", value: "thinkingmachines/inkling:free", description: "Free reasoning model; 1M context" },
-    // Current flagship / value models
-    { title: "GPT-6.1 Sol", value: "openai/gpt-6.1-sol", description: "OpenAI flagship; 1M context" },
-    { title: "GPT-6 Luna", value: "openai/gpt-6-luna", description: "Fast, low-cost OpenAI; 1M context" },
-    { title: "Claude Sonnet 5.5", value: "anthropic/claude-sonnet-5.5", description: "Balanced Anthropic flagship" },
-    { title: "Claude Haiku 5.5", value: "anthropic/claude-haiku-5.5", description: "Fast, affordable Claude" },
-    { title: "Gemini 4 Argon", value: "google/gemini-4-argon", description: "Google flagship reasoning" },
-    { title: "Gemini 3.8 Flash", value: "google/gemini-3.8-flash", description: "Fast Google model" },
-    { title: "DeepSeek V4.1 Flash", value: "deepseek/deepseek-v4.1-flash", description: "Low-cost, high throughput" },
-    { title: "Qwen3.8 Max Prime", value: "qwen/qwen3.8-max-prime", description: "Alibaba flagship" },
-    { title: "Kimi K3.1 Pro", value: "moonshotai/kimi-k3.1-pro", description: "Moonshot flagship; 1M context" },
-    { title: "GLM 5.3 Prime", value: "z-ai/glm-5.3-prime", description: "Z.ai flagship" },
-    { title: "Grok 4.7", value: "x-ai/grok-4.7", description: "xAI flagship; 500k context" },
   ],
 });
 
@@ -119,7 +134,8 @@ const buildConfigFromPrompts = ({
 export const runInitFlow = (path: string) =>
   Effect.gen(function* () {
     const provider = yield* providerPrompt;
-    const apiKey = yield* apiKeyPrompt;
+    const useEnvReference = provider === "openrouter" && (yield* openrouterKeySourcePrompt) === "env";
+    const apiKey = useEnvReference ? OPENROUTER_ENV_REFERENCE : Redacted.value(yield* apiKeyPrompt);
 
     // If OpenRouter is selected, prompt for model selection
     const model = provider === "openrouter" ? yield* openrouterModelPrompt : undefined;
@@ -128,7 +144,7 @@ export const runInitFlow = (path: string) =>
 
     const config = buildConfigFromPrompts({
       provider,
-      apiKey: Redacted.value(apiKey),
+      apiKey,
       preferredPersona,
       model,
     });

@@ -91,5 +91,5 @@ export const buildDefaultConfig = (apiKey: string): AppConfig => ({
   ],
   translation: defaultTranslationSection,
   profiles: defaultProfiles,
-  preferredPersona: "programming",
+  preferredPersona: "default",
 });

@@ -78,7 +78,7 @@ profiles:
     expect(config.profiles.programming.temperature).toBe(0.1);
     expect(config.profiles.programming.styleHint).toBe(defaultProfiles.programming.styleHint);
     expect(config.translation.target).toBe("en");
-    expect(config.preferredPersona).toBe("programming");
+    expect(config.preferredPersona).toBe("default");
   });
 
   test("falls back to OPENAI_API_KEY when no config file exists", async () => {

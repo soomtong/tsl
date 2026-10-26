@@ -34,7 +34,7 @@ export const PERSONA_PRESETS: Record<PersonaKey, PersonaPreset> = {
   },
 };
 
-export const fallbackPersonaKey: PersonaKey = "programming";
+export const fallbackPersonaKey: PersonaKey = "default";
 
 export const requirePersona = (key: PersonaKey | string | undefined): Effect.Effect<PersonaPreset, ConfigError> =>
   Effect.gen(function* () {
