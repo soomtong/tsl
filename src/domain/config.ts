@@ -1,10 +1,10 @@
-import * as Context from "effect/Context";
-import * as Effect from "effect/Effect";
-import { ProviderError } from "./errors";
-import { DEFAULT_MODELS } from "./models";
-import type { PersonaKey } from "./persona";
+import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
+import { ProviderError } from './errors';
+import { DEFAULT_MODELS } from './models';
+import type { PersonaKey } from './persona';
 
-export type ProviderName = "openai" | "google" | "openrouter";
+export type ProviderName = 'openai' | 'google' | 'openrouter';
 
 export type ProviderConfig = {
   readonly name: ProviderName;
@@ -33,27 +33,37 @@ export type AppConfig = {
   readonly preferredPersona: PersonaKey;
 };
 
-export class AppConfigService extends Context.Service<AppConfigService, AppConfig>()("tsl/AppConfig") {}
+export class AppConfigService extends Context.Service<
+  AppConfigService,
+  AppConfig
+>()('tsl/AppConfig') {}
 
-export const getProvider = (config: AppConfig, preferred?: ProviderName): Effect.Effect<ProviderConfig, ProviderError> =>
+export const getProvider = (
+  config: AppConfig,
+  preferred?: ProviderName,
+): Effect.Effect<ProviderConfig, ProviderError> =>
   Effect.gen(function* () {
     if (preferred) {
-      const provider = config.providers.find((entry) => entry.name === preferred);
+      const provider = config.providers.find(
+        (entry) => entry.name === preferred,
+      );
       if (!provider) {
-        return yield* new ProviderError({ message: `Provider ${preferred} not configured` });
+        return yield* new ProviderError({
+          message: `Provider ${preferred} not configured`,
+        });
       }
       return provider;
     }
 
     const [first] = config.providers;
     if (!first) {
-      return yield* new ProviderError({ message: "No providers configured" });
+      return yield* new ProviderError({ message: 'No providers configured' });
     }
     return first;
   });
 
 export const DEFAULT_TRANSLATION_FORMATTER =
-  "Please convert the Korean prompt into concise English that coding agents understand. Keep imperative mood.";
+  'Please convert the Korean prompt into concise English that coding agents understand. Keep imperative mood.';
 
 export const defaultProfiles: Record<PersonaKey, ProfileConfig> = {
   default: {
@@ -62,21 +72,21 @@ export const defaultProfiles: Record<PersonaKey, ProfileConfig> = {
   },
   programming: {
     temperature: 0.2,
-    styleHint: "Emphasize reproducible steps and include code if needed.",
+    styleHint: 'Emphasize reproducible steps and include code if needed.',
   },
   research: {
     temperature: 0.3,
-    styleHint: "Focus on assumptions, references, and structured analysis.",
+    styleHint: 'Focus on assumptions, references, and structured analysis.',
   },
   review: {
     temperature: 0.3,
-    styleHint: "Highlight potential gaps, testing plans, and quality checks.",
+    styleHint: 'Highlight potential gaps, testing plans, and quality checks.',
   },
 };
 
 export const defaultTranslationSection: TranslationSection = {
-  source: "ko",
-  target: "en",
+  source: 'ko',
+  target: 'en',
   autoCopyToClipboard: true,
   formatter: DEFAULT_TRANSLATION_FORMATTER,
 };
@@ -84,12 +94,12 @@ export const defaultTranslationSection: TranslationSection = {
 export const buildDefaultConfig = (apiKey: string): AppConfig => ({
   providers: [
     {
-      name: "openai",
+      name: 'openai',
       apiKey,
       model: DEFAULT_MODELS.openai,
     },
   ],
   translation: defaultTranslationSection,
   profiles: defaultProfiles,
-  preferredPersona: "default",
+  preferredPersona: 'default',
 });

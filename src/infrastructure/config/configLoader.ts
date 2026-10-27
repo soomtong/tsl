@@ -1,18 +1,26 @@
-import * as Effect from "effect/Effect";
-import * as FileSystem from "effect/FileSystem";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
-import type { AppConfig, ProfileConfig, ProviderConfig, TranslationSection } from "../../domain/config";
-import { defaultProfiles, defaultTranslationSection } from "../../domain/config";
-import { ConfigError } from "../../domain/errors";
-import { DEFAULT_MODELS } from "../../domain/models";
-import type { PersonaKey } from "../../domain/persona";
-import { fallbackPersonaKey, personaKeys } from "../../domain/persona";
+import * as Effect from 'effect/Effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Option from 'effect/Option';
+import * as Schema from 'effect/Schema';
+import type {
+  AppConfig,
+  ProfileConfig,
+  ProviderConfig,
+  TranslationSection,
+} from '../../domain/config';
+import {
+  defaultProfiles,
+  defaultTranslationSection,
+} from '../../domain/config';
+import { ConfigError } from '../../domain/errors';
+import { DEFAULT_MODELS } from '../../domain/models';
+import type { PersonaKey } from '../../domain/persona';
+import { fallbackPersonaKey, personaKeys } from '../../domain/persona';
 
 const ENV_PATTERN = /^\$\{ENV:([A-Z0-9_]+)\}$/i;
 
 const ProviderConfigSchema = Schema.Struct({
-  name: Schema.Literals(["openai", "google", "openrouter"]),
+  name: Schema.Literals(['openai', 'google', 'openrouter']),
   apiKey: Schema.String,
   model: Schema.String,
   apiUrl: Schema.optional(Schema.String),
@@ -52,14 +60,22 @@ type ConfigDocument = {
   readonly preferredPersona?: PersonaKey;
 };
 
-export const parseConfigDocument = (raw: string): Effect.Effect<ConfigDocument, ConfigError> =>
+export const parseConfigDocument = (
+  raw: string,
+): Effect.Effect<ConfigDocument, ConfigError> =>
   Effect.try({
     try: () => Bun.YAML.parse(raw) as unknown,
-    catch: (error) => new ConfigError({ message: `Invalid YAML: ${error instanceof Error ? error.message : String(error)}` }),
+    catch: (error) =>
+      new ConfigError({
+        message: `Invalid YAML: ${error instanceof Error ? error.message : String(error)}`,
+      }),
   }).pipe(
     Effect.flatMap((parsed) =>
       Schema.decodeUnknownEffect(ConfigDocumentSchema)(parsed).pipe(
-        Effect.mapError((error) => new ConfigError({ message: `Invalid config: ${error.message}` })),
+        Effect.mapError(
+          (error) =>
+            new ConfigError({ message: `Invalid config: ${error.message}` }),
+        ),
       ),
     ),
   );
@@ -68,7 +84,9 @@ const requireEnvVar = (name: string): Effect.Effect<string, ConfigError> =>
   Effect.gen(function* () {
     const value = Bun.env[name];
     if (value === undefined || value.length === 0) {
-      return yield* new ConfigError({ message: `Missing required env var: ${name}` });
+      return yield* new ConfigError({
+        message: `Missing required env var: ${name}`,
+      });
     }
     return value;
   });
@@ -92,23 +110,36 @@ const resolveProviderSecrets = (providers: ReadonlyArray<ProviderConfig>) =>
           apiKey,
         })),
       ),
-    { concurrency: "unbounded" },
+    { concurrency: 'unbounded' },
   );
 
-export const mergeProfiles = (overrides?: Partial<Record<PersonaKey, Partial<ProfileConfig>>>): Record<PersonaKey, ProfileConfig> =>
-  Object.fromEntries(personaKeys.map((key) => [key, { ...defaultProfiles[key], ...(overrides?.[key] ?? {}) }])) as Record<
-    PersonaKey,
-    ProfileConfig
-  >;
+export const mergeProfiles = (
+  overrides?: Partial<Record<PersonaKey, Partial<ProfileConfig>>>,
+): Record<PersonaKey, ProfileConfig> =>
+  Object.fromEntries(
+    personaKeys.map((key) => [
+      key,
+      { ...defaultProfiles[key], ...(overrides?.[key] ?? {}) },
+    ]),
+  ) as Record<PersonaKey, ProfileConfig>;
 
-const readConfigFile = (path: string): Effect.Effect<Option.Option<string>, ConfigError, FileSystem.FileSystem> =>
+const readConfigFile = (
+  path: string,
+): Effect.Effect<Option.Option<string>, ConfigError, FileSystem.FileSystem> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     if (!(yield* fs.exists(path))) {
       return Option.none<string>();
     }
     return Option.some(yield* fs.readFileString(path));
-  }).pipe(Effect.mapError((error) => new ConfigError({ message: `Failed to read ${path}: ${error.message}` })));
+  }).pipe(
+    Effect.mapError(
+      (error) =>
+        new ConfigError({
+          message: `Failed to read ${path}: ${error.message}`,
+        }),
+    ),
+  );
 
 const determineBaseDir = () => {
   const xdgHome = Bun.env.XDG_CONFIG_HOME;
@@ -119,27 +150,32 @@ const determineBaseDir = () => {
   if (homeDir && homeDir.length > 0) {
     return `${homeDir}/.config`;
   }
-  return ".";
+  return '.';
 };
 
-export const resolveDefaultConfigPath = () => `${determineBaseDir()}/tsl/config.yaml`;
+export const resolveDefaultConfigPath = () =>
+  `${determineBaseDir()}/tsl/config.yaml`;
 
-const ensureProviders = (providers: ReadonlyArray<ProviderConfig> | undefined): Effect.Effect<ReadonlyArray<ProviderConfig>, ConfigError> =>
+const ensureProviders = (
+  providers: ReadonlyArray<ProviderConfig> | undefined,
+): Effect.Effect<ReadonlyArray<ProviderConfig>, ConfigError> =>
   Effect.gen(function* () {
     if (providers && providers.length > 0) {
       return providers;
     }
-    const openAiKey = yield* requireEnvVar("OPENAI_API_KEY");
+    const openAiKey = yield* requireEnvVar('OPENAI_API_KEY');
     return [
       {
-        name: "openai",
+        name: 'openai',
         apiKey: openAiKey,
         model: DEFAULT_MODELS.openai,
       },
     ] satisfies ReadonlyArray<ProviderConfig>;
   });
 
-export const loadConfig = (pathOverride?: string): Effect.Effect<AppConfig, ConfigError, FileSystem.FileSystem> =>
+export const loadConfig = (
+  pathOverride?: string,
+): Effect.Effect<AppConfig, ConfigError, FileSystem.FileSystem> =>
   Effect.gen(function* () {
     const targetPath = pathOverride ?? resolveDefaultConfigPath();
     const content = yield* readConfigFile(targetPath);
@@ -154,7 +190,10 @@ export const loadConfig = (pathOverride?: string): Effect.Effect<AppConfig, Conf
 
     return {
       providers: resolvedProviders,
-      translation: { ...defaultTranslationSection, ...(document.translation ?? {}) },
+      translation: {
+        ...defaultTranslationSection,
+        ...(document.translation ?? {}),
+      },
       profiles: mergeProfiles(document.profiles),
       preferredPersona: document.preferredPersona ?? fallbackPersonaKey,
     } satisfies AppConfig;

@@ -1,8 +1,12 @@
-import { Prompt } from "effect/ai";
-import type { AppConfig, ProfileConfig } from "./config";
-import type { TranslationRequest } from "./translationRequest";
+import { Prompt } from 'effect/ai';
+import type { AppConfig, ProfileConfig } from './config';
+import type { TranslationRequest } from './translationRequest';
 
-export const buildSystemMessage = (request: TranslationRequest, config: AppConfig, profile: ProfileConfig) => {
+export const buildSystemMessage = (
+  request: TranslationRequest,
+  config: AppConfig,
+  profile: ProfileConfig,
+) => {
   // Replace any hardcoded language references in formatter with the actual target language
   const formatterWithLanguage = config.translation.formatter
     .replace(/\bEnglish\b/gi, request.targetLanguage)
@@ -18,27 +22,31 @@ export const buildSystemMessage = (request: TranslationRequest, config: AppConfi
     sections.push(`Style hint: ${profile.styleHint}`);
   }
 
-  return sections.join("\n\n");
+  return sections.join('\n\n');
 };
 
 const buildUserMessage = (request: TranslationRequest, config: AppConfig) => {
   const lines = [
     `Source language (${config.translation.source}):`,
     request.sourceText,
-    "",
-    "Respond with the translated instruction only.",
+    '',
+    'Respond with the translated instruction only.',
   ];
-  return lines.join("\n");
+  return lines.join('\n');
 };
 
-export const buildTranslationPrompt = (request: TranslationRequest, config: AppConfig, profile: ProfileConfig) =>
+export const buildTranslationPrompt = (
+  request: TranslationRequest,
+  config: AppConfig,
+  profile: ProfileConfig,
+) =>
   Prompt.make([
     {
-      role: "system",
+      role: 'system',
       content: buildSystemMessage(request, config, profile),
     },
     {
-      role: "user",
+      role: 'user',
       content: buildUserMessage(request, config),
     },
   ]);
