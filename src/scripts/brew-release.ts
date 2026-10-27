@@ -10,7 +10,7 @@ function runCommand(cmd: string[], label: string) {
   const result = Bun.spawnSync({
     cmd,
     cwd: repoRoot,
-    stdio: ["inherit", "pipe", "inherit"],
+    stdio: ['inherit', 'pipe', 'inherit'],
   });
   if (result.exitCode !== 0) {
     throw new Error(`Command failed (${label})`);
@@ -22,13 +22,13 @@ function runCommand(cmd: string[], label: string) {
 }
 
 async function main() {
-  runCommand(["bun", "run", "build:bytecode:macos"], "Build macOS binary");
-  runCommand(["chmod", "755", binaryPath], "Ensure executable permissions");
-  runCommand([binaryPath, "--help"], "Smoke test tsl --help");
-  runCommand(["bun", "run", "distribute:brew"], "Generate tarball + formula");
-  runCommand(["tar", "-tzf", tarPath], "Inspect tarball contents");
-  runCommand(["bun", "run", "src/scripts/release-guide.ts"], "Follow-up guide");
-  console.log("\n🎉 Brew release workflow complete.");
+  runCommand(['bun', 'run', 'build:bytecode:macos'], 'Build macOS binary');
+  runCommand(['chmod', '755', binaryPath], 'Ensure executable permissions');
+  runCommand([binaryPath, '--help'], 'Smoke test tsl --help');
+  runCommand(['bun', 'run', 'distribute:brew'], 'Generate tarball + formula');
+  runCommand(['tar', '-tzf', tarPath], 'Inspect tarball contents');
+  runCommand(['bun', 'run', 'src/scripts/release-guide.ts'], 'Follow-up guide');
+  console.log('\n🎉 Brew release workflow complete.');
 }
 
 main().catch((error) => {

@@ -1,13 +1,13 @@
-import { Command } from "effect/cli";
-import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
-import packageJson from "../package.json";
-import { executeTranslation } from "./application/translation";
-import { runInitFlow, showConfigFile } from "./cli/config";
-import { runDoctor } from "./cli/doctor";
-import { resolveSourceText } from "./cli/input";
-import { showLoadedConfig } from "./cli/inspect";
+import { Command } from 'effect/cli';
+import * as Effect from 'effect/Effect';
+import * as Layer from 'effect/Layer';
+import * as Option from 'effect/Option';
+import packageJson from '../package.json';
+import { executeTranslation } from './application/translation';
+import { runInitFlow, showConfigFile } from './cli/config';
+import { runDoctor } from './cli/doctor';
+import { resolveSourceText } from './cli/input';
+import { showLoadedConfig } from './cli/inspect';
 import {
   clipboardOption,
   configPathOption,
@@ -21,19 +21,28 @@ import {
   promptArg,
   promptInfoOption,
   showConfigOption,
-} from "./cli/options";
-import { logClipboardStatus, logPersonaAndTarget, logTranslationOutputs, printPromptDetails } from "./cli/output";
-import { AppConfigService, getProvider } from "./domain/config";
-import { requirePersona } from "./domain/persona";
-import { buildSystemMessage } from "./domain/prompt";
-import type { TranslationRequest } from "./domain/translationRequest";
-import { makeTranslationRequest } from "./domain/translationRequest";
-import { MacosClipboardLayer } from "./infrastructure/clipboard/macosClipboard";
-import { loadConfig, resolveDefaultConfigPath } from "./infrastructure/config/configLoader";
-import { buildTranslatorLayer } from "./infrastructure/providers/translatorFactory";
+} from './cli/options';
+import {
+  logClipboardStatus,
+  logPersonaAndTarget,
+  logTranslationOutputs,
+  printPromptDetails,
+} from './cli/output';
+import { AppConfigService, getProvider } from './domain/config';
+import { ConfigError } from './domain/errors';
+import { requirePersona } from './domain/persona';
+import { buildSystemMessage } from './domain/prompt';
+import type { TranslationRequest } from './domain/translationRequest';
+import { makeTranslationRequest } from './domain/translationRequest';
+import { macosClipboardLayer } from './infrastructure/clipboard/macosClipboard';
+import {
+  loadConfig,
+  resolveDefaultConfigPath,
+} from './infrastructure/config/configLoader';
+import { buildTranslatorLayer } from './infrastructure/providers/translatorFactory';
 
 const translationCommand = Command.make(
-  "tsl",
+  'tsl',
   {
     prompt: promptArg,
     persona: personaOption,
@@ -47,7 +56,19 @@ const translationCommand = Command.make(
     clipboard: clipboardOption,
     doctor: doctorOption,
   },
-  ({ prompt, persona, lang, length, configPath, init, showConfig, loadShow, promptInfo, clipboard, doctor }) =>
+  ({
+    prompt,
+    persona,
+    lang,
+    length,
+    configPath,
+    init,
+    showConfig,
+    loadShow,
+    promptInfo,
+    clipboard,
+    doctor,
+  }) =>
     Effect.gen(function* () {
       const configPathOverride = Option.getOrUndefined(configPath);
       const defaultConfigPath = resolveDefaultConfigPath();
@@ -75,23 +96,34 @@ const translationCommand = Command.make(
         return;
       }
 
-      const personaKey = Option.getOrElse(persona, () => configData.preferredPersona);
+      const personaKey = Option.getOrElse(
+        persona,
+        () => configData.preferredPersona,
+      );
       const personaProfile = yield* requirePersona(personaKey);
 
       const profile = configData.profiles[personaProfile.key];
       if (!profile) {
-        return yield* Effect.fail(new Error(`No profile defined for persona ${personaProfile.key}`));
+        return yield* new ConfigError({
+          message: `No profile defined for persona ${personaProfile.key}`,
+        });
       }
 
-      const targetLanguage = (Option.getOrUndefined(lang) ?? configData.translation.target).trim();
+      const targetLanguage = (
+        Option.getOrUndefined(lang) ?? configData.translation.target
+      ).trim();
 
       if (promptInfo) {
         const systemRequest: TranslationRequest = {
-          sourceText: "",
+          sourceText: '',
           persona: personaProfile,
           targetLanguage,
         };
-        const systemMessage = buildSystemMessage(systemRequest, configData, profile);
+        const systemMessage = buildSystemMessage(
+          systemRequest,
+          configData,
+          profile,
+        );
         yield* printPromptDetails({
           persona: personaProfile,
           profile,
@@ -102,10 +134,13 @@ const translationCommand = Command.make(
         return;
       }
 
-      const promptTokens = Option.getOrElse(prompt, () => [] as ReadonlyArray<string>).map(String);
-      const finalPrompt = yield* resolveSourceText({ tokens: promptTokens, fromClipboard: clipboard }).pipe(
-        Effect.provide(MacosClipboardLayer),
-      );
+      // A variadic optional argument is typed `Option<readonly unknown[]>`
+      // by effect/cli, so the tokens are re-stringified here.
+      const promptTokens = Option.getOrElse(prompt, () => []).map(String);
+      const finalPrompt = yield* resolveSourceText({
+        tokens: promptTokens,
+        fromClipboard: clipboard,
+      }).pipe(Effect.provide(macosClipboardLayer));
 
       const request = yield* makeTranslationRequest({
         sourceText: finalPrompt,
@@ -116,7 +151,11 @@ const translationCommand = Command.make(
       const sampleCount = yield* ensureLength(length);
       const provider = yield* getProvider(configData);
 
-      const runtimeLayer = Layer.mergeAll(Layer.succeed(AppConfigService, configData), buildTranslatorLayer(provider), MacosClipboardLayer);
+      const runtimeLayer = Layer.mergeAll(
+        Layer.succeed(AppConfigService, configData),
+        buildTranslatorLayer(provider),
+        macosClipboardLayer,
+      );
 
       const result = yield* executeTranslation({
         request,
@@ -125,12 +164,25 @@ const translationCommand = Command.make(
 
       yield* logPersonaAndTarget(personaProfile, request.targetLanguage);
       yield* logTranslationOutputs(result.outputs);
-      yield* logClipboardStatus(result.copiedToClipboard, configData.translation.autoCopyToClipboard);
+      yield* logClipboardStatus(
+        result.copiedToClipboard,
+        configData.translation.autoCopyToClipboard,
+      );
     }),
-).pipe(Command.withDescription("Translate Korean prompts to English and copy results to the clipboard."));
+).pipe(
+  Command.withDescription(
+    'Translate Korean prompts to English and copy results to the clipboard.',
+  ),
+);
 
-export const runCli = (args: ReadonlyArray<string>) => Command.runWith(translationCommand, { version: packageJson.version })(args);
+/** Runs the CLI against explicit arguments; used by integration tests. */
+export function runCli(args: readonly string[]) {
+  return Command.runWith(translationCommand, { version: packageJson.version })(
+    args,
+  );
+}
 
+/** The CLI wired to `process.argv`; the entry point `main.ts` runs this. */
 export const program = Command.run(translationCommand, {
   version: packageJson.version,
 });

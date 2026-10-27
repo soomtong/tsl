@@ -1,17 +1,23 @@
-import type { LanguageModel } from "effect/ai";
-import type * as Layer from "effect/Layer";
-import type { ProviderConfig } from "../../domain/config";
-import { buildGoogleTranslatorLayer } from "./googleTranslator";
-import { buildOpenAiTranslatorLayer } from "./openaiTranslator";
-import { buildOpenRouterTranslatorLayer } from "./openrouterTranslator";
+import type { LanguageModel } from 'effect/ai';
+import type * as Layer from 'effect/Layer';
+import type { ProviderConfig } from '../../domain/config';
+import { unreachable } from '../../domain/unreachable';
+import { buildGoogleTranslatorLayer } from './googleTranslator';
+import { buildOpenAiTranslatorLayer } from './openaiTranslator';
+import { buildOpenRouterTranslatorLayer } from './openrouterTranslator';
 
-export const buildTranslatorLayer = (provider: ProviderConfig): Layer.Layer<LanguageModel.LanguageModel> => {
+/** Builds the `LanguageModel` layer for the configured provider. */
+export function buildTranslatorLayer(
+  provider: ProviderConfig,
+): Layer.Layer<LanguageModel.LanguageModel> {
   switch (provider.name) {
-    case "openai":
+    case 'openai':
       return buildOpenAiTranslatorLayer(provider);
-    case "google":
+    case 'google':
       return buildGoogleTranslatorLayer(provider);
-    case "openrouter":
+    case 'openrouter':
       return buildOpenRouterTranslatorLayer(provider);
+    default:
+      return unreachable(provider.name);
   }
-};
+}
