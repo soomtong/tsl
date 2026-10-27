@@ -35,7 +35,7 @@ const request: TranslationRequest = {
   targetLanguage: 'English',
 };
 
-const fakeLanguageModel = (texts: ReadonlyArray<string>) => {
+const fakeLanguageModel = (texts: readonly string[]) => {
   let index = 0;
   return Layer.effect(
     LanguageModel.LanguageModel,
@@ -45,14 +45,14 @@ const fakeLanguageModel = (texts: ReadonlyArray<string>) => {
           const text = texts[index++] ?? '';
           return [
             { type: 'text' as const, text },
-          ] satisfies ReadonlyArray<Response.PartEncoded>;
+          ] satisfies readonly Response.PartEncoded[];
         }),
       streamText: () => Stream.empty,
     }),
   );
 };
 
-const clipboardLayer = (copied: Array<string>) =>
+const clipboardLayer = (copied: string[]) =>
   Layer.succeed(Clipboard, {
     copy: (text: string) =>
       Effect.sync(() => {
@@ -67,8 +67,8 @@ const provide = <A, E>(
     E,
     LanguageModel.LanguageModel | AppConfigService | Clipboard
   >,
-  texts: ReadonlyArray<string>,
-  copied: Array<string>,
+  texts: readonly string[],
+  copied: string[],
 ) =>
   effect.pipe(
     Effect.provide(
@@ -82,7 +82,7 @@ const provide = <A, E>(
 
 describe('executeTranslation', () => {
   test('returns trimmed model output and copies the aggregate', async () => {
-    const copied: Array<string> = [];
+    const copied: string[] = [];
     const result = await Effect.runPromise(
       provide(
         executeTranslation({ request, sampleCount: 1 }),
@@ -97,7 +97,7 @@ describe('executeTranslation', () => {
   });
 
   test('keeps input order across concurrent samples', async () => {
-    const copied: Array<string> = [];
+    const copied: string[] = [];
     const result = await Effect.runPromise(
       provide(
         executeTranslation({ request, sampleCount: 3 }),
@@ -111,7 +111,7 @@ describe('executeTranslation', () => {
   });
 
   test('fails when the model returns empty text', async () => {
-    const copied: Array<string> = [];
+    const copied: string[] = [];
     const exit = await Effect.runPromiseExit(
       provide(executeTranslation({ request, sampleCount: 1 }), ['   '], copied),
     );
@@ -121,7 +121,7 @@ describe('executeTranslation', () => {
   });
 
   test('skips the clipboard when auto-copy is disabled', async () => {
-    const copied: Array<string> = [];
+    const copied: string[] = [];
     const noCopyConfig: AppConfig = {
       ...config,
       translation: { ...config.translation, autoCopyToClipboard: false },

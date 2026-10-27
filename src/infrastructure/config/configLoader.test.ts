@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { BunServices } from '@effect/platform-bun';
 import * as Effect from 'effect/Effect';
 import * as Exit from 'effect/Exit';
-import { defaultProfiles } from '../../domain/config';
+import { DEFAULT_PROFILES } from '../../domain/config';
 import {
   loadConfig,
   mergeProfiles,
@@ -10,7 +10,7 @@ import {
   resolveDefaultConfigPath,
 } from './configLoader';
 
-const tmpFiles: Array<string> = [];
+const tmpFiles: string[] = [];
 
 const writeTmpConfig = async (contents: string) => {
   const path = `${Bun.env.TMPDIR ?? '/tmp'}/tsl-config-${crypto.randomUUID()}.yaml`;
@@ -86,7 +86,7 @@ profiles:
     expect(config.providers[0]?.apiKey).toBe('sk-test');
     expect(config.profiles.programming.temperature).toBe(0.1);
     expect(config.profiles.programming.styleHint).toBe(
-      defaultProfiles.programming.styleHint,
+      DEFAULT_PROFILES.programming.styleHint,
     );
     expect(config.translation.target).toBe('en');
     expect(config.preferredPersona).toBe('default');
@@ -118,7 +118,7 @@ describe('mergeProfiles', () => {
 
     expect(profiles.review.temperature).toBe(0.9);
     expect(profiles.default.temperature).toBe(
-      defaultProfiles.default.temperature,
+      DEFAULT_PROFILES.default.temperature,
     );
   });
 });

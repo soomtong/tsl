@@ -5,8 +5,9 @@ import * as Layer from 'effect/Layer';
 import * as Redacted from 'effect/Redacted';
 import type { ProviderConfig } from '../../domain/config';
 
-export const buildOpenRouterTranslatorLayer = (provider: ProviderConfig) =>
-  OpenRouterLanguageModel.layer({ model: provider.model }).pipe(
+/** OpenRouter via its Chat Completions API. */
+export function buildOpenRouterTranslatorLayer(provider: ProviderConfig) {
+  return OpenRouterLanguageModel.layer({ model: provider.model }).pipe(
     Layer.provide(
       OpenRouterClient.layer({
         apiKey: Redacted.make(provider.apiKey),
@@ -14,3 +15,4 @@ export const buildOpenRouterTranslatorLayer = (provider: ProviderConfig) =>
       }).pipe(Layer.provide(FetchHttpClient.layer)),
     ),
   );
+}

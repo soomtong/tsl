@@ -5,18 +5,13 @@ import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as Path from 'effect/Path';
 import type { AppConfig, ProviderConfig } from '../domain/config';
 import { ConfigError } from '../domain/errors';
+import { DEFAULT_PROVIDER_URLS } from '../domain/models';
 
-type DoctorCheck = {
+interface DoctorCheck {
   readonly name: string;
   readonly ok: boolean;
   readonly detail: string;
-};
-
-const DEFAULT_PROVIDER_URLS = {
-  openai: 'https://api.openai.com/v1',
-  google: 'https://generativelanguage.googleapis.com/v1beta/openai',
-  openrouter: 'https://openrouter.ai/api/v1',
-} as const;
+}
 
 const AUTH_ENDPOINTS = {
   openai: '/models',
@@ -25,13 +20,17 @@ const AUTH_ENDPOINTS = {
   openrouter: '/key',
 } as const;
 
-const healthUrl = (provider: ProviderConfig) =>
-  `${(provider.apiUrl ?? DEFAULT_PROVIDER_URLS[provider.name]).replace(/\/+$/, '')}${AUTH_ENDPOINTS[provider.name]}`;
+const IGNORED_CONFIG_NAMES = ['config.json', 'config.yml'] as const;
 
-const checkProvider = (
+function healthUrl(provider: ProviderConfig): string {
+  const base = provider.apiUrl ?? DEFAULT_PROVIDER_URLS[provider.name];
+  return `${base.replace(/\/+$/, '')}${AUTH_ENDPOINTS[provider.name]}`;
+}
+
+function checkProvider(
   provider: ProviderConfig,
-): Effect.Effect<DoctorCheck, never, HttpClient.HttpClient> =>
-  Effect.gen(function* () {
+): Effect.Effect<DoctorCheck, never, HttpClient.HttpClient> {
+  return Effect.gen(function* () {
     const request = HttpClientRequest.get(healthUrl(provider)).pipe(
       HttpClientRequest.bearerToken(provider.apiKey),
     );
@@ -44,12 +43,14 @@ const checkProvider = (
     );
 
     const authFailed = status === 401 || status === 403;
-    const detail =
-      status === 0
-        ? `unreachable (${provider.model})`
-        : authFailed
-          ? `HTTP ${status} — authentication failed, check apiKey (${provider.model})`
-          : `HTTP ${status} (${provider.model})`;
+    let detail: string;
+    if (status === 0) {
+      detail = `unreachable (${provider.model})`;
+    } else if (authFailed) {
+      detail = `HTTP ${status} — authentication failed, check apiKey (${provider.model})`;
+    } else {
+      detail = `HTTP ${status} (${provider.model})`;
+    }
 
     return {
       name: `provider:${provider.name}`,
@@ -57,32 +58,38 @@ const checkProvider = (
       detail,
     };
   });
+}
 
-const checkClipboard = (): DoctorCheck => {
-  const binary = Bun.which('pbcopy');
+// Resolves against the live PATH (not the one captured at startup) so the
+// check agrees with how the clipboard layer spawns the binary.
+function checkClipboard(): DoctorCheck {
+  const binary = Bun.which('pbcopy', { PATH: Bun.env.PATH });
   return {
     name: 'clipboard',
     ok: binary !== null,
     detail: binary ?? 'pbcopy not found',
   };
-};
+}
 
-const renderChecks = (checks: ReadonlyArray<DoctorCheck>) =>
-  Effect.forEach(checks, (check) =>
+function renderChecks(checks: readonly DoctorCheck[]) {
+  return Effect.forEach(checks, (check) =>
     Console.log(`${check.ok ? '✅' : '⛔️'} ${check.name} — ${check.detail}`),
   );
+}
 
-const IGNORED_CONFIG_NAMES = ['config.json', 'config.yml'] as const;
-
-export const runDoctor = (
+/**
+ * Prints health checks for the config, each provider's auth endpoint and the
+ * clipboard binary, then fails with `ConfigError` if any check is red.
+ */
+export function runDoctor(
   config: AppConfig,
   configPath: string,
 ): Effect.Effect<
   void,
   ConfigError,
   HttpClient.HttpClient | FileSystem.FileSystem | Path.Path
-> =>
-  Effect.gen(function* () {
+> {
+  return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const providerChecks = yield* Effect.forEach(
@@ -90,7 +97,7 @@ export const runDoctor = (
       checkProvider,
       { concurrency: 'unbounded' },
     );
-    const checks: ReadonlyArray<DoctorCheck> = [
+    const checks: readonly DoctorCheck[] = [
       {
         name: 'config',
         ok: config.providers.length > 0,
@@ -105,16 +112,14 @@ export const runDoctor = (
 
     for (const name of IGNORED_CONFIG_NAMES) {
       const candidate = path.join(path.dirname(configPath), name);
-      const exists = yield* fs
-        .exists(candidate)
-        .pipe(
-          Effect.mapError(
-            (error) =>
-              new ConfigError({
-                message: `Failed to inspect ${candidate}: ${error.message}`,
-              }),
-          ),
-        );
+      const exists = yield* fs.exists(candidate).pipe(
+        Effect.mapError(
+          (error) =>
+            new ConfigError({
+              message: `Failed to inspect ${candidate}: ${error.message}`,
+            }),
+        ),
+      );
       if (exists) {
         yield* Console.log(
           `ℹ️ ignored config: ${candidate} (only config.yaml is loaded)`,
@@ -129,3 +134,4 @@ export const runDoctor = (
       });
     }
   });
+}

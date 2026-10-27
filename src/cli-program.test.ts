@@ -1,4 +1,11 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  test,
+} from 'bun:test';
 import { BunServices } from '@effect/platform-bun';
 import * as Effect from 'effect/Effect';
 import * as Exit from 'effect/Exit';
@@ -9,8 +16,14 @@ import * as Stream from 'effect/Stream';
 import { TestConsole } from 'effect/testing';
 import { runCli } from './cli-program';
 
-const tmpDirs: Array<string> = [];
+const tmpDirs: string[] = [];
 const servers: Array<{ stop: (force?: boolean) => void }> = [];
+const tmpRoot = Bun.env.TMPDIR ?? '/tmp';
+
+// The doctor check looks for `pbcopy` on PATH, which only macOS ships.
+// A no-op shim keeps the suite deterministic on Linux CI and dev boxes.
+const shimDir = `${tmpRoot}/tsl-shim-${crypto.randomUUID()}`;
+const originalPath = Bun.env.PATH;
 
 const testLayer = Layer.mergeAll(
   BunServices.layer,
@@ -18,13 +31,13 @@ const testLayer = Layer.mergeAll(
   TestConsole.layer,
 );
 
-const writeConfig = async (contents: string) => {
-  const dir = `${Bun.env.TMPDIR ?? '/tmp'}/tsl-cli-${crypto.randomUUID()}`;
+async function writeConfig(contents: string): Promise<string> {
+  const dir = `${tmpRoot}/tsl-cli-${crypto.randomUUID()}`;
   const path = `${dir}/config.yaml`;
   await Bun.write(path, contents);
   tmpDirs.push(dir);
   return path;
-};
+}
 
 const baseConfig = (providerLine: string, extra = '') => `providers:
 ${providerLine}
@@ -41,8 +54,8 @@ profiles:
 preferredPersona: programming
 ${extra}`;
 
-const run = (args: ReadonlyArray<string>, stdin?: string) =>
-  Effect.gen(function* () {
+function run(args: readonly string[], stdin?: string) {
+  return Effect.gen(function* () {
     const exit = yield* Effect.exit(runCli(args));
     const logs = yield* TestConsole.logLines;
     const errors = yield* TestConsole.errorLines;
@@ -64,6 +77,19 @@ const run = (args: ReadonlyArray<string>, stdin?: string) =>
           ),
     ),
   );
+}
+
+beforeAll(async () => {
+  const shim = `${shimDir}/pbcopy`;
+  await Bun.write(shim, '#!/bin/sh\ncat >/dev/null\n');
+  Bun.spawnSync(['chmod', '755', shim]);
+  Bun.env.PATH = `${shimDir}:${originalPath ?? ''}`;
+});
+
+afterAll(() => {
+  Bun.env.PATH = originalPath;
+  Bun.spawnSync(['rm', '-rf', shimDir]);
+});
 
 afterEach(async () => {
   for (const server of servers.splice(0)) {
@@ -148,7 +174,7 @@ describe('runCli', () => {
     expect(output).toContain('ignored config:');
     expect(output).toContain('config.json (only config.yaml is loaded)');
     expect(output).toContain('provider:google — HTTP 200 (gemini-2.5-flash)');
-    expect(output).toContain('clipboard —');
+    expect(output).toContain(`✅ clipboard — ${shimDir}/pbcopy`);
     expect(output).not.toContain('sk-secret');
   });
 
@@ -231,6 +257,7 @@ describe('runCli', () => {
     expect(Exit.isFailure(exit)).toBe(true);
     expect(output).toContain('⛔️ provider:google — HTTP 401');
   });
+
   test('joins unquoted prompt tokens and still parses later flags', async () => {
     let captured = '';
     let calls = 0;

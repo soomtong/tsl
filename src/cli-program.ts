@@ -29,11 +29,12 @@ import {
   printPromptDetails,
 } from './cli/output';
 import { AppConfigService, getProvider } from './domain/config';
+import { ConfigError } from './domain/errors';
 import { requirePersona } from './domain/persona';
 import { buildSystemMessage } from './domain/prompt';
 import type { TranslationRequest } from './domain/translationRequest';
 import { makeTranslationRequest } from './domain/translationRequest';
-import { MacosClipboardLayer } from './infrastructure/clipboard/macosClipboard';
+import { macosClipboardLayer } from './infrastructure/clipboard/macosClipboard';
 import {
   loadConfig,
   resolveDefaultConfigPath,
@@ -103,9 +104,9 @@ const translationCommand = Command.make(
 
       const profile = configData.profiles[personaProfile.key];
       if (!profile) {
-        return yield* Effect.fail(
-          new Error(`No profile defined for persona ${personaProfile.key}`),
-        );
+        return yield* new ConfigError({
+          message: `No profile defined for persona ${personaProfile.key}`,
+        });
       }
 
       const targetLanguage = (
@@ -133,14 +134,13 @@ const translationCommand = Command.make(
         return;
       }
 
-      const promptTokens = Option.getOrElse(
-        prompt,
-        () => [] as ReadonlyArray<string>,
-      ).map(String);
+      // A variadic optional argument is typed `Option<readonly unknown[]>`
+      // by effect/cli, so the tokens are re-stringified here.
+      const promptTokens = Option.getOrElse(prompt, () => []).map(String);
       const finalPrompt = yield* resolveSourceText({
         tokens: promptTokens,
         fromClipboard: clipboard,
-      }).pipe(Effect.provide(MacosClipboardLayer));
+      }).pipe(Effect.provide(macosClipboardLayer));
 
       const request = yield* makeTranslationRequest({
         sourceText: finalPrompt,
@@ -154,7 +154,7 @@ const translationCommand = Command.make(
       const runtimeLayer = Layer.mergeAll(
         Layer.succeed(AppConfigService, configData),
         buildTranslatorLayer(provider),
-        MacosClipboardLayer,
+        macosClipboardLayer,
       );
 
       const result = yield* executeTranslation({
@@ -175,9 +175,14 @@ const translationCommand = Command.make(
   ),
 );
 
-export const runCli = (args: ReadonlyArray<string>) =>
-  Command.runWith(translationCommand, { version: packageJson.version })(args);
+/** Runs the CLI against explicit arguments; used by integration tests. */
+export function runCli(args: readonly string[]) {
+  return Command.runWith(translationCommand, { version: packageJson.version })(
+    args,
+  );
+}
 
+/** The CLI wired to `process.argv`; the entry point `main.ts` runs this. */
 export const program = Command.run(translationCommand, {
   version: packageJson.version,
 });

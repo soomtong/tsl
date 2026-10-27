@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import type { AppConfig } from '../domain/config';
-import { defaultProfiles, defaultTranslationSection } from '../domain/config';
+import {
+  DEFAULT_PROFILES,
+  DEFAULT_TRANSLATION_SECTION,
+} from '../domain/config';
 import { redactConfig } from './inspect';
 
 const config: AppConfig = {
@@ -8,8 +11,8 @@ const config: AppConfig = {
     { name: 'openai', apiKey: 'sk-secret', model: 'gpt-4o-mini' },
     { name: 'google', apiKey: '', model: 'gemini-2.5-flash' },
   ],
-  translation: defaultTranslationSection,
-  profiles: defaultProfiles,
+  translation: DEFAULT_TRANSLATION_SECTION,
+  profiles: DEFAULT_PROFILES,
   preferredPersona: 'programming',
 };
 

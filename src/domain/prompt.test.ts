@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { AppConfig } from './config';
-import { defaultProfiles, defaultTranslationSection } from './config';
+import { DEFAULT_PROFILES, DEFAULT_TRANSLATION_SECTION } from './config';
 import { PERSONA_PRESETS } from './persona';
 import { buildSystemMessage } from './prompt';
 import type { TranslationRequest } from './translationRequest';
@@ -8,11 +8,11 @@ import type { TranslationRequest } from './translationRequest';
 const config: AppConfig = {
   providers: [{ name: 'openai', apiKey: 'test', model: 'gpt-4o-mini' }],
   translation: {
-    ...defaultTranslationSection,
+    ...DEFAULT_TRANSLATION_SECTION,
     formatter:
       'Please convert the Korean prompt into concise English that coding agents understand.',
   },
-  profiles: defaultProfiles,
+  profiles: DEFAULT_PROFILES,
   preferredPersona: 'programming',
 };
 
@@ -27,7 +27,7 @@ describe('buildSystemMessage', () => {
     const message = buildSystemMessage(
       request,
       config,
-      defaultProfiles.programming,
+      DEFAULT_PROFILES.programming,
     );
 
     expect(message).toContain('concise JAPANESE instructions');
@@ -39,7 +39,7 @@ describe('buildSystemMessage', () => {
     const message = buildSystemMessage(
       request,
       config,
-      defaultProfiles.programming,
+      DEFAULT_PROFILES.programming,
     );
 
     expect(message).toContain(PERSONA_PRESETS.programming.system);
@@ -50,7 +50,7 @@ describe('buildSystemMessage', () => {
     const message = buildSystemMessage(
       request,
       config,
-      defaultProfiles.default,
+      DEFAULT_PROFILES.default,
     );
 
     expect(message).not.toContain('Style hint:');

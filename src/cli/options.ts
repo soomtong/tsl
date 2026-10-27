@@ -1,7 +1,7 @@
 import { Argument, Flag, Prompt } from 'effect/cli';
 import * as Effect from 'effect/Effect';
 import { TranslationError } from '../domain/errors';
-import { personaKeys } from '../domain/persona';
+import { PERSONA_KEYS } from '../domain/persona';
 
 export const promptArg = Argument.String('prompt').pipe(
   Argument.variadic,
@@ -11,7 +11,7 @@ export const promptArg = Argument.String('prompt').pipe(
   ),
 );
 
-export const personaOption = Flag.Literals('persona', personaKeys).pipe(
+export const personaOption = Flag.Literals('persona', PERSONA_KEYS).pipe(
   Flag.optional,
   Flag.withDescription('Selects the translation persona preset'),
 );
@@ -72,6 +72,7 @@ export const doctorOption = Flag.Boolean('doctor').pipe(
   ),
 );
 
+/** Interactive fallback used when no prompt arrives via args or stdin. */
 export const promptInput = Prompt.String({
   message: 'Enter the Korean instruction to translate',
   validate: (value) => {
@@ -82,11 +83,13 @@ export const promptInput = Prompt.String({
   },
 });
 
-export const ensureLength = (
+/** Validates `--length`, which must be a positive sample count. */
+export function ensureLength(
   value: number,
-): Effect.Effect<number, TranslationError> =>
-  value <= 0
+): Effect.Effect<number, TranslationError> {
+  return value <= 0
     ? Effect.fail(
         new TranslationError({ message: '--length must be greater than 0' }),
       )
     : Effect.succeed(value);
+}

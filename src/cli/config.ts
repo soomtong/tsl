@@ -6,11 +6,18 @@ import * as Path from 'effect/Path';
 import * as Redacted from 'effect/Redacted';
 import type { AppConfig, ProviderName } from '../domain/config';
 import {
+  DEFAULT_PROFILES,
   DEFAULT_TRANSLATION_FORMATTER,
-  defaultProfiles,
 } from '../domain/config';
 import { DEFAULT_MODELS } from '../domain/models';
 import type { PersonaKey } from '../domain/persona';
+
+interface InitAnswers {
+  readonly provider: ProviderName;
+  readonly apiKey: string;
+  readonly preferredPersona: PersonaKey;
+  readonly model?: string;
+}
 
 const providerPrompt = Prompt.Select<ProviderName>({
   message: 'Select provider',
@@ -144,16 +151,18 @@ const preferredPersonaPrompt = Prompt.Select<PersonaKey>({
   ],
 });
 
-const writeConfig = (path: string, config: AppConfig) =>
-  Effect.gen(function* () {
+function writeConfig(path: string, config: AppConfig) {
+  return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const pathService = yield* Path.Path;
     yield* fs.makeDirectory(pathService.dirname(path), { recursive: true });
     yield* fs.writeFileString(path, Bun.YAML.stringify(config, null, 2));
   });
+}
 
-export const showConfigFile = (path: string) =>
-  Effect.gen(function* () {
+/** Prints the raw config file (`--config`), or a hint when it is missing. */
+export function showConfigFile(path: string) {
+  return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const exists = yield* fs.exists(path);
     if (!exists) {
@@ -166,26 +175,20 @@ export const showConfigFile = (path: string) =>
     yield* Console.log(`--- ${path} ---`);
     yield* Console.log(content);
   });
+}
 
-const buildConfigFromPrompts = ({
+function buildConfigFromAnswers({
   provider,
   apiKey,
   preferredPersona,
   model,
-}: {
-  readonly provider: ProviderName;
-  readonly apiKey: string;
-  readonly preferredPersona: PersonaKey;
-  readonly model?: string;
-}): AppConfig => {
-  const defaultModel = DEFAULT_MODELS[provider];
-
+}: InitAnswers): AppConfig {
   return {
     providers: [
       {
         name: provider,
         apiKey,
-        model: model ?? defaultModel,
+        model: model ?? DEFAULT_MODELS[provider],
       },
     ],
     translation: {
@@ -194,13 +197,14 @@ const buildConfigFromPrompts = ({
       autoCopyToClipboard: true,
       formatter: DEFAULT_TRANSLATION_FORMATTER,
     },
-    profiles: defaultProfiles,
+    profiles: DEFAULT_PROFILES,
     preferredPersona,
   };
-};
+}
 
-export const runInitFlow = (path: string) =>
-  Effect.gen(function* () {
+/** Interactive `--init`: asks for provider, key, model and persona. */
+export function runInitFlow(path: string) {
+  return Effect.gen(function* () {
     const provider = yield* providerPrompt;
     const useEnvReference =
       provider === 'openrouter' && (yield* openrouterKeySourcePrompt) === 'env';
@@ -208,13 +212,13 @@ export const runInitFlow = (path: string) =>
       ? OPENROUTER_ENV_REFERENCE
       : Redacted.value(yield* apiKeyPrompt);
 
-    // If OpenRouter is selected, prompt for model selection
+    // Only OpenRouter offers a model menu; the others use DEFAULT_MODELS.
     const model =
       provider === 'openrouter' ? yield* openrouterModelPrompt : undefined;
 
     const preferredPersona = yield* preferredPersonaPrompt;
 
-    const config = buildConfigFromPrompts({
+    const config = buildConfigFromAnswers({
       provider,
       apiKey,
       preferredPersona,
@@ -224,3 +228,4 @@ export const runInitFlow = (path: string) =>
     yield* writeConfig(path, config);
     yield* Console.log(`✅ Configuration written to ${path}`);
   });
+}

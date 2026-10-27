@@ -2,27 +2,23 @@ import * as Effect from 'effect/Effect';
 import { TranslationError } from './errors';
 import type { PersonaPreset } from './persona';
 
-export type TranslationRequest = {
+/** What the user asked to translate, and how. */
+export interface TranslationRequest {
   readonly sourceText: string;
   readonly persona: PersonaPreset;
   readonly targetLanguage: string;
-};
+}
 
-export type TranslationRequestParams = {
-  readonly sourceText: string;
-  readonly persona: PersonaPreset;
-  readonly targetLanguage: string;
-};
-
-export const makeTranslationRequest = ({
+/**
+ * Normalises raw input into a request, rejecting blank text or target.
+ * Both fields are trimmed so callers can pass shell or clipboard input as-is.
+ */
+export function makeTranslationRequest({
   sourceText,
   persona,
   targetLanguage,
-}: TranslationRequestParams): Effect.Effect<
-  TranslationRequest,
-  TranslationError
-> =>
-  Effect.gen(function* () {
+}: TranslationRequest): Effect.Effect<TranslationRequest, TranslationError> {
+  return Effect.gen(function* () {
     const trimmed = sourceText.trim();
     if (trimmed.length === 0) {
       return yield* new TranslationError({ message: 'Prompt cannot be empty' });
@@ -39,3 +35,4 @@ export const makeTranslationRequest = ({
       targetLanguage: trimmedTarget,
     } satisfies TranslationRequest;
   });
+}

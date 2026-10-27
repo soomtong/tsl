@@ -1,6 +1,7 @@
 import { AiError } from 'effect/ai';
 
-export const errorHint = (error: unknown): string | undefined => {
+/** Returns a remediation hint for known provider failures, if any. */
+export function errorHint(error: unknown): string | undefined {
   if (!AiError.isAiError(error)) {
     return undefined;
   }
@@ -10,4 +11,4 @@ export const errorHint = (error: unknown): string | undefined => {
   }
 
   return undefined;
-};
+}

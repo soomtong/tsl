@@ -3,17 +3,31 @@ import * as Effect from 'effect/Effect';
 import type { AppConfig, ProfileConfig } from '../domain/config';
 import type { PersonaPreset } from '../domain/persona';
 
-export const logPersonaAndTarget = (
+export interface PromptDetails {
+  readonly persona: PersonaPreset;
+  readonly profile: ProfileConfig;
+  readonly config: AppConfig;
+  readonly targetLanguage: string;
+  readonly systemMessage: string;
+}
+
+function logPersona(persona: PersonaPreset) {
+  return Console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
+}
+
+export function logPersonaAndTarget(
   persona: PersonaPreset,
   targetLanguage: string,
-) =>
-  Effect.gen(function* () {
-    yield* Console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
+) {
+  return Effect.gen(function* () {
+    yield* logPersona(persona);
     yield* Console.log(`🎯 [target] ${targetLanguage}`);
   });
+}
 
-export const logTranslationOutputs = (outputs: ReadonlyArray<string>) =>
-  Effect.forEach(outputs, (text, index) =>
+/** Prints each sample, numbering them only when there is more than one. */
+export function logTranslationOutputs(outputs: readonly string[]) {
+  return Effect.forEach(outputs, (text, index) =>
     Effect.gen(function* () {
       const label =
         outputs.length === 1 ? '[translation]' : `[translation ${index + 1}]`;
@@ -22,31 +36,28 @@ export const logTranslationOutputs = (outputs: ReadonlyArray<string>) =>
       yield* Console.log('');
     }),
   );
+}
 
-export const logClipboardStatus = (copied: boolean, autoCopyEnabled: boolean) =>
-  Effect.gen(function* () {
+export function logClipboardStatus(copied: boolean, autoCopyEnabled: boolean) {
+  return Effect.gen(function* () {
     if (copied) {
       yield* Console.log('✅ Copied translation to clipboard');
     } else if (!autoCopyEnabled) {
       yield* Console.log('ℹ️ Auto-copy disabled in config');
     }
   });
+}
 
-export const printPromptDetails = ({
+/** Dumps the effective persona, profile and system prompt (`--prompt`). */
+export function printPromptDetails({
   persona,
   profile,
   config,
   targetLanguage,
   systemMessage,
-}: {
-  readonly persona: PersonaPreset;
-  readonly profile: ProfileConfig;
-  readonly config: AppConfig;
-  readonly targetLanguage: string;
-  readonly systemMessage: string;
-}) =>
-  Effect.gen(function* () {
-    yield* Console.log(`🧑‍💼 [persona] ${persona.key} — ${persona.title}`);
+}: PromptDetails) {
+  return Effect.gen(function* () {
+    yield* logPersona(persona);
     yield* Console.log(`🎯 [target language] ${targetLanguage}`);
     yield* Console.log(`🌡️[temperature] ${profile.temperature}`);
     yield* Console.log(
@@ -61,3 +72,4 @@ export const printPromptDetails = ({
     yield* Console.log('--- system prompt ---');
     yield* Console.log(systemMessage);
   });
+}

@@ -2,12 +2,16 @@ import { Prompt } from 'effect/ai';
 import type { AppConfig, ProfileConfig } from './config';
 import type { TranslationRequest } from './translationRequest';
 
-export const buildSystemMessage = (
+/**
+ * Builds the system message: role, the configured formatter (with any
+ * hard-coded "English"/"en" swapped for the requested target language),
+ * the persona directive and an optional style hint.
+ */
+export function buildSystemMessage(
   request: TranslationRequest,
   config: AppConfig,
   profile: ProfileConfig,
-) => {
-  // Replace any hardcoded language references in formatter with the actual target language
+): string {
   const formatterWithLanguage = config.translation.formatter
     .replace(/\bEnglish\b/gi, request.targetLanguage)
     .replace(/\ben\b/gi, request.targetLanguage);
@@ -23,9 +27,12 @@ export const buildSystemMessage = (
   }
 
   return sections.join('\n\n');
-};
+}
 
-const buildUserMessage = (request: TranslationRequest, config: AppConfig) => {
+function buildUserMessage(
+  request: TranslationRequest,
+  config: AppConfig,
+): string {
   const lines = [
     `Source language (${config.translation.source}):`,
     request.sourceText,
@@ -33,14 +40,15 @@ const buildUserMessage = (request: TranslationRequest, config: AppConfig) => {
     'Respond with the translated instruction only.',
   ];
   return lines.join('\n');
-};
+}
 
-export const buildTranslationPrompt = (
+/** Assembles the system + user prompt sent to the language model. */
+export function buildTranslationPrompt(
   request: TranslationRequest,
   config: AppConfig,
   profile: ProfileConfig,
-) =>
-  Prompt.make([
+) {
+  return Prompt.make([
     {
       role: 'system',
       content: buildSystemMessage(request, config, profile),
@@ -50,3 +58,4 @@ export const buildTranslationPrompt = (
       content: buildUserMessage(request, config),
     },
   ]);
+}

@@ -5,27 +5,41 @@ import { Clipboard } from '../application/ports/clipboard';
 import { TranslationError } from '../domain/errors';
 import { promptInput } from './options';
 
+export interface SourceTextOptions {
+  /** Positional CLI tokens; joined with single spaces. */
+  readonly tokens: readonly string[];
+  /** Read from the clipboard instead of arguments or stdin. */
+  readonly fromClipboard: boolean;
+}
+
 const readStdin = Effect.gen(function* () {
   const stdio = yield* Stdio;
   const text = yield* stdio.stdin.pipe(Stream.decodeText, Stream.mkString);
   return text.trim();
 });
 
-const nonEmpty = (source: string, text: string) =>
-  text.length > 0
+function nonEmpty(
+  source: string,
+  text: string,
+): Effect.Effect<string, TranslationError> {
+  return text.length > 0
     ? Effect.succeed(text)
     : Effect.fail(
         new TranslationError({
           message: `${source} is empty; nothing to translate`,
         }),
       );
+}
 
-// Argument tokens are shell-parsed (`?`, `!`, `;` ...), so clipboard and piped stdin exist as shell-free input paths.
-export const resolveSourceText = (options: {
-  readonly tokens: ReadonlyArray<string>;
-  readonly fromClipboard: boolean;
-}) =>
-  Effect.gen(function* () {
+/**
+ * Resolves the text to translate, in order: clipboard (when requested),
+ * CLI tokens, an interactive prompt on a TTY, or piped stdin.
+ *
+ * Argument tokens are shell-parsed (`?`, `!`, `;` ...), so the clipboard and
+ * stdin paths exist as shell-free alternatives.
+ */
+export function resolveSourceText(options: SourceTextOptions) {
+  return Effect.gen(function* () {
     if (options.fromClipboard) {
       const clipboard = yield* Clipboard;
       const text = yield* clipboard.paste;
@@ -43,3 +57,4 @@ export const resolveSourceText = (options: {
     }
     return yield* nonEmpty('Stdin', yield* readStdin);
   });
+}
