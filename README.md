@@ -286,6 +286,7 @@ $ ./dist/tsl --lang "Chinese" "캐싱 전략을 최적화해주세요"
 - CLI 통합 테스트는 `Command.runWith`와 실제 `BunServices.layer` 위에서 `TestConsole`로 출력을 검증합니다.
 - 구조와 의존성 규칙은 `docs/architecture.md`를 참고하세요.
 - 변경 후 `bun run check`(typecheck + biome + test)로 검증합니다.
+- 코드 스타일은 Google TypeScript Style Guide를 따릅니다. 적용 방식과 예외는 `STYLE.md`를 참고하세요.
 - Homebrew 배포 및 릴리스 자동화는 `docs/homebrew-release.md`를 참고하세요.
 
 ## Roadmap
