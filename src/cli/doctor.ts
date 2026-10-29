@@ -77,6 +77,31 @@ function renderChecks(checks: readonly DoctorCheck[]) {
   );
 }
 
+// Purely informational: a failure while looking for stray config files must
+// not turn the doctor red, so the cause is logged at the unhandled level and
+// otherwise ignored.
+function warnIgnoredConfigs(
+  configPath: string,
+): Effect.Effect<void, never, FileSystem.FileSystem | Path.Path> {
+  return Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    for (const name of IGNORED_CONFIG_NAMES) {
+      const candidate = path.join(path.dirname(configPath), name);
+      if (yield* fs.exists(candidate)) {
+        yield* Console.log(
+          `ℹ️ ignored config: ${candidate} (only config.yaml is loaded)`,
+        );
+      }
+    }
+  }).pipe(
+    Effect.ignore({
+      log: 'Unhandled',
+      message: 'Failed to scan for ignored config files',
+    }),
+  );
+}
+
 /**
  * Prints health checks for the config, each provider's auth endpoint and the
  * clipboard binary, then fails with `ConfigError` if any check is red.
@@ -90,8 +115,6 @@ export function runDoctor(
   HttpClient.HttpClient | FileSystem.FileSystem | Path.Path
 > {
   return Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const providerChecks = yield* Effect.forEach(
       config.providers,
       checkProvider,
@@ -109,23 +132,7 @@ export function runDoctor(
 
     yield* Console.log('Health checks');
     yield* renderChecks(checks);
-
-    for (const name of IGNORED_CONFIG_NAMES) {
-      const candidate = path.join(path.dirname(configPath), name);
-      const exists = yield* fs.exists(candidate).pipe(
-        Effect.mapError(
-          (error) =>
-            new ConfigError({
-              message: `Failed to inspect ${candidate}: ${error.message}`,
-            }),
-        ),
-      );
-      if (exists) {
-        yield* Console.log(
-          `ℹ️ ignored config: ${candidate} (only config.yaml is loaded)`,
-        );
-      }
-    }
+    yield* warnIgnoredConfigs(configPath);
 
     const failures = checks.filter((check) => !check.ok).length;
     if (failures > 0) {
