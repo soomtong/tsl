@@ -5,6 +5,7 @@ import * as Effect from 'effect/Effect';
 import * as FetchHttpClient from 'effect/http/FetchHttpClient';
 import * as Layer from 'effect/Layer';
 import { errorHint } from './cli/errorHint';
+import { compactPresenterLayer } from './cli/presenter';
 import { program } from './cli-program';
 
 const reportFailure = Effect.catchIf(
@@ -20,7 +21,13 @@ const reportFailure = Effect.catchIf(
 
 BunRuntime.runMain(
   program.pipe(
-    Effect.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)),
+    Effect.provide(
+      Layer.mergeAll(
+        BunServices.layer,
+        FetchHttpClient.layer,
+        compactPresenterLayer,
+      ),
+    ),
     reportFailure,
   ),
   {
